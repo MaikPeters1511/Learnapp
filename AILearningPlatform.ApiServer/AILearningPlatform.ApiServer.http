@@ -1,0 +1,6 @@
+@AILearningPlatform.ApiServer_HostAddress = http://localhost:5283
+
+GET {{AILearningPlatform.ApiServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,600 @@
+<div data-theme="night" class="min-h-screen bg-gradient-to-br from-base-300 via-base-200 to-base-300 text-base-content font-sans antialiased selection:bg-primary selection:text-primary-content">
+  
+  <!-- Navbar -->
+  <header class="navbar bg-base-100/80 backdrop-blur-md sticky top-0 z-50 shadow-md border-b border-base-200/50 px-4 md:px-8 transition-all">
+    <div class="flex-1">
+      <a class="btn btn-ghost text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent flex items-center gap-2">
+        <span class="text-3xl filter drop-shadow">⚡</span> Academy.AI
+      </a>
+    </div>
+    
+    <div class="flex-none gap-4">
+      @if (learningPath()) {
+        <button class="btn btn-outline btn-primary btn-sm rounded-lg" (click)="currentView.set('dashboard')">
+          Dashboard
+        </button>
+        <button class="btn btn-ghost btn-sm text-neutral-content rounded-lg" (click)="currentView.set('assessment')">
+          Re-Assess
+        </button>
+      }
+      <div class="dropdown dropdown-end">
+        <label tabindex="0" class="btn btn-ghost btn-circle avatar border border-base-content/10">
+          <div class="w-9 rounded-full bg-neutral text-neutral-content flex items-center justify-center font-bold">
+            <span>JD</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container mx-auto px-4 py-8 max-w-7xl">
+    
+    @if (loading()) {
+      <div class="flex flex-col items-center justify-center py-32 gap-6">
+        <span class="loading loading-ring loading-lg text-primary scale-125"></span>
+        <div class="text-center">
+          <p class="text-xl font-bold tracking-wide animate-pulse bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AI analysiert Skillset...</p>
+          <p class="text-xs opacity-50 mt-1">Lernpfad wird individuell abgestimmt</p>
+        </div>
+      </div>
+    } @else {
+
+      <!-- VIEW 1: Skill Assessment Wizard -->
+      @if (currentView() === 'assessment') {
+        <div class="max-w-3xl mx-auto animate-fade-in">
+          
+          <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-black tracking-tight mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              Dein persönlicher Karriere-Pfad
+            </h1>
+            <p class="text-sm md:text-base opacity-60 max-w-xl mx-auto">
+              Teile uns deinen aktuellen Kenntnisstand mit, und unsere KI generiert maßgeschneiderte Aufgaben und Feedback-Zyklen für dich.
+            </p>
+          </div>
+
+          <div class="card bg-base-100 border border-base-200/50 shadow-2xl overflow-hidden relative">
+            <!-- Decorative gradient blur -->
+            <div class="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="card-body p-6 md:p-12 relative z-10">
+              <!-- Steps Progress Indicator -->
+              <div class="w-full flex justify-between items-center mb-8 gap-1">
+                @for (stepNum of [1, 2, 3, 4, 5]; track stepNum) {
+                  <div class="flex-1 h-2 rounded-full transition-all duration-300"
+                       [class.bg-primary]="assessmentStep() >= stepNum"
+                       [class.bg-base-300]="assessmentStep() < stepNum">
+                  </div>
+                }
+              </div>
+
+              <!-- Topic Label -->
+              <div class="text-xs uppercase tracking-wider font-extrabold text-primary mb-1">
+                Kategorie {{ assessmentStep() }} von 5
+              </div>
+
+              <!-- Interactive Forms per Step -->
+              <div class="min-h-[200px] flex flex-col justify-between py-2">
+                @if (assessmentStep() === 1) {
+                  <div>
+                    <h2 class="text-2xl font-bold mb-2">Wie stufst du dich in <span class="text-primary">.NET & C#</span> ein?</h2>
+                    <p class="text-sm opacity-60 mb-8">Kenntnisse über Records, Minimal APIs, Dependency Injection, EF Core & .NET 10.</p>
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-6">
+                        <input type="range" min="1" max="10" [value]="dotnetLevel()" (input)="dotnetLevel.set(+$any($event.target).value)" class="range range-primary range-sm" />
+                        <span class="badge badge-primary badge-lg text-lg font-mono px-4 py-3">{{ dotnetLevel() }}/10</span>
+                      </div>
+                      <div class="text-xs flex justify-between opacity-50 px-1">
+                        <span>Syntax & Basics (1-3)</span>
+                        <span>APIs & Pattern (4-7)</span>
+                        <span>Performance & Architecture (8-10)</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (assessmentStep() === 2) {
+                  <div>
+                    <h2 class="text-2xl font-bold mb-2">Wie stufst du dich in <span class="text-secondary">Angular</span> ein?</h2>
+                    <p class="text-sm opacity-60 mb-8">Kenntnisse über Standalone Components, Signals, RxJS und Hydration in v22.</p>
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-6">
+                        <input type="range" min="1" max="10" [value]="angularLevel()" (input)="angularLevel.set(+$any($event.target).value)" class="range range-secondary range-sm" />
+                        <span class="badge badge-secondary badge-lg text-lg font-mono px-4 py-3">{{ angularLevel() }}/10</span>
+                      </div>
+                      <div class="text-xs flex justify-between opacity-50 px-1">
+                        <span>Komponenten & CSS (1-3)</span>
+                        <span>Signals & Services (4-7)</span>
+                        <span>Performance & Custom-Stores (8-10)</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (assessmentStep() === 3) {
+                  <div>
+                    <h2 class="text-2xl font-bold mb-2">Erfahrung mit <span class="text-accent">Architektur</span>?</h2>
+                    <p class="text-sm opacity-60 mb-8">Umgang mit SOLID-Prinzipien, Clean Architecture, CQRS, DDD und Microservices.</p>
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-6">
+                        <input type="range" min="1" max="10" [value]="architectureLevel()" (input)="architectureLevel.set(+$any($event.target).value)" class="range range-accent range-sm" />
+                        <span class="badge badge-accent badge-lg text-lg font-mono px-4 py-3">{{ architectureLevel() }}/10</span>
+                      </div>
+                      <div class="text-xs flex justify-between opacity-50 px-1">
+                        <span>Modulaufteilung (1-3)</span>
+                        <span>Clean & Schichten (4-7)</span>
+                        <span>Distributed Systems (8-10)</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (assessmentStep() === 4) {
+                  <div>
+                    <h2 class="text-2xl font-bold mb-2">Dein Level im <span class="text-info">Testing</span>?</h2>
+                    <p class="text-sm opacity-60 mb-8">Erfahrung mit Unit Tests, xUnit, Testcontainers, Playwright E2E und TDD.</p>
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-6">
+                        <input type="range" min="1" max="10" [value]="testingLevel()" (input)="testingLevel.set(+$any($event.target).value)" class="range range-info range-sm" />
+                        <span class="badge badge-info badge-lg text-lg font-mono px-4 py-3">{{ testingLevel() }}/10</span>
+                      </div>
+                      <div class="text-xs flex justify-between opacity-50 px-1">
+                        <span>Keine Tests (1-3)</span>
+                        <span>Unit & Mocking (4-7)</span>
+                        <span>E2E & Integration (8-10)</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (assessmentStep() === 5) {
+                  <div>
+                    <h2 class="text-2xl font-bold mb-2">Kenntnisse in der <span class="text-warning">Cloud & DevOps</span>?</h2>
+                    <p class="text-sm opacity-60 mb-8">Umgang mit Docker, Kubernetes, CI/CD-Pipelines und AWS/Azure Deployments.</p>
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-6">
+                        <input type="range" min="1" max="10" [value]="cloudLevel()" (input)="cloudLevel.set(+$any($event.target).value)" class="range range-warning range-sm" />
+                        <span class="badge badge-warning badge-lg text-lg font-mono px-4 py-3">{{ cloudLevel() }}/10</span>
+                      </div>
+                      <div class="text-xs flex justify-between opacity-50 px-1">
+                        <span>Lokale Applikation (1-3)</span>
+                        <span>Docker & Compose (4-7)</span>
+                        <span>K8s Orchestrierung (8-10)</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Navigation -->
+              <div class="card-actions justify-between mt-10 border-t border-base-200/50 pt-6">
+                <button class="btn btn-outline btn-sm rounded-lg" 
+                        [disabled]="assessmentStep() === 1" 
+                        (click)="assessmentStep.set(assessmentStep() - 1)">
+                  Zurück
+                </button>
+                
+                @if (assessmentStep() < 5) {
+                  <button class="btn btn-primary btn-sm rounded-lg shadow-lg shadow-primary/20 px-6" 
+                          (click)="assessmentStep.set(assessmentStep() + 1)">
+                    Weiter
+                  </button>
+                } @else {
+                  <button class="btn btn-success btn-sm rounded-lg text-white shadow-lg shadow-success/20 px-6" 
+                          (click)="submitAssessment()">
+                    Lernpfad generieren ✨
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- VIEW 2: Dashboard View -->
+      @if (currentView() === 'dashboard' && learningPath()) {
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 animate-fade-in">
+          
+          <!-- Middle/Left: Path Info & Module Cards (takes 3 cols) -->
+          <div class="lg:col-span-3 space-y-8">
+            
+            <!-- Dashboard Banner & Progress -->
+            <div class="relative card bg-base-100 border border-base-200/50 shadow-xl overflow-hidden">
+              <div class="absolute -right-8 -top-8 w-40 h-40 bg-secondary/10 rounded-full blur-3xl"></div>
+              <div class="card-body p-6 md:p-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-100 to-gray-400">
+                      {{ learningPath().title }}
+                    </h1>
+                    <p class="text-sm opacity-60 mt-1 max-w-xl">{{ learningPath().description }}</p>
+                  </div>
+                  <div class="bg-base-200 border border-base-300 rounded-2xl px-4 py-3 text-center min-w-[120px] shadow-sm">
+                    <span class="text-xs uppercase font-bold opacity-50 block">Status</span>
+                    <span class="text-lg font-black text-primary">In Progress</span>
+                  </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-base-200/50">
+                  <div>
+                    <span class="text-xs opacity-50 block">Absolvierte Module</span>
+                    <span class="text-xl font-bold">1 / 5</span>
+                  </div>
+                  <div>
+                    <span class="text-xs opacity-50 block">Gesamte Aufgaben</span>
+                    <span class="text-xl font-bold text-secondary">5</span>
+                  </div>
+                  <div>
+                    <span class="text-xs opacity-50 block">Genommene Quizzes</span>
+                    <span class="text-xl font-bold text-accent">0</span>
+                  </div>
+                  <div class="col-span-2 md:col-span-1">
+                    <span class="text-xs opacity-50 block">Lernfortschritt</span>
+                    <div class="flex items-center gap-2 mt-1">
+                      <progress class="progress progress-primary w-24 h-2" value="20" max="100"></progress>
+                      <span class="text-xs font-bold text-primary">20%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Header -->
+            <h2 class="text-xl font-extrabold tracking-tight border-l-4 border-primary pl-3">Deine aktiven Lernmodule</h2>
+
+            <!-- Modules Accordion-style List -->
+            <div class="space-y-4">
+              @for (module of learningPath().modules; track module.id) {
+                <div class="collapse collapse-arrow bg-base-100 border border-base-200/60 shadow-md rounded-2xl overflow-hidden hover:border-base-content/10 transition-all duration-300">
+                  <input type="checkbox" checked /> 
+                  
+                  <!-- Collapse Title -->
+                  <div class="collapse-title flex justify-between items-center pr-12 py-4">
+                    <div class="flex items-center gap-4">
+                      <!-- Topic Icon/Badge -->
+                      <div class="w-10 h-10 rounded-xl bg-neutral/80 border border-base-300 flex items-center justify-center">
+                        @if (module.topic === '.NET') {
+                          <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                          </svg>
+                        } @else if (module.topic === 'Angular') {
+                          <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 2L2 5.5l1.5 13L12 22l8.5-3.5 1.5-13L12 2zM12 5l6.5 2.5-.5 10-6 2.5-6-2.5-.5-10L12 5zm-1 3v4H8v2h3v3h2v-3h3v-2h-3V8h-2z"/>
+                          </svg>
+                        } @else if (module.topic === 'Architektur') {
+                          <svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12" />
+                          </svg>
+                        } @else if (module.topic === 'Testing') {
+                          <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        } @else if (module.topic === 'Cloud') {
+                          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 00.333-7.488 4.225 4.225 0 00-7.8-2.613 3.513 3.513 0 00-6.19 2.502c0 .272.031.54.092.8A4.5 4.5 0 002.25 15z" />
+                          </svg>
+                        }
+                      </div>
+                      <div>
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                          {{ module.title }}
+                          @if (module.isCompleted) {
+                            <span class="badge badge-success badge-sm text-white font-bold gap-1">
+                              ✔ Erledigt
+                            </span>
+                          }
+                        </h3>
+                        <p class="text-xs opacity-60 line-clamp-1 mt-0.5">{{ module.description }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Collapse Content -->
+                  <div class="collapse-content border-t border-base-200/50 bg-base-150/20 px-6 py-4 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <p class="text-sm opacity-85 max-w-2xl leading-relaxed">{{ module.description }}</p>
+                      <div class="flex gap-2 shrink-0">
+                        <button class="btn btn-outline btn-warning btn-sm rounded-lg" (click)="startQuiz(module.topic, 5)">
+                          Quiz starten 📝
+                        </button>
+                        @if (!module.isCompleted) {
+                          <button class="btn btn-ghost hover:bg-success/20 text-success btn-sm rounded-lg border border-success/30" (click)="completeModule(module)">
+                            Als erledigt markieren
+                          </button>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Challenges Sub-list -->
+                    @if (module.challenges && module.challenges.length > 0) {
+                      <div class="space-y-3 pt-2">
+                        <div class="text-xs font-extrabold uppercase tracking-widest opacity-40">Herausforderungen</div>
+                        @for (challenge of module.challenges; track challenge.id) {
+                          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-base-200/70 p-4 rounded-xl border border-base-300/50 hover:border-primary/40 transition-all gap-4">
+                            <div class="flex items-start gap-3">
+                              <span class="text-2xl filter drop-shadow">💻</span>
+                              <div>
+                                <span class="font-bold text-sm text-base-content">{{ challenge.title }}</span>
+                                <span class="text-xs block opacity-60">Schreibe funktionsfähigen Code und erhalte AI-Feedback.</span>
+                              </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm rounded-lg shadow-sm w-full sm:w-auto" (click)="selectChallenge(challenge)">
+                              Code schreiben 🚀
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Right side: Sidebar (takes 1 col) -->
+          <div class="space-y-6">
+            
+            <!-- Level stats / Career status -->
+            <div class="card bg-base-100 border border-base-200/50 shadow-lg relative overflow-hidden">
+              <div class="card-body p-5">
+                <h3 class="text-sm uppercase font-extrabold tracking-wider text-accent mb-3">Deine AI-Einstufung</h3>
+                
+                <div class="space-y-3">
+                  <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                      <span>.NET & C#</span>
+                      <span class="text-primary">{{ dotnetLevel() }}/10</span>
+                    </div>
+                    <progress class="progress progress-primary w-full h-1.5" [value]="dotnetLevel() * 10" max="100"></progress>
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                      <span>Angular</span>
+                      <span class="text-secondary">{{ angularLevel() }}/10</span>
+                    </div>
+                    <progress class="progress progress-secondary w-full h-1.5" [value]="angularLevel() * 10" max="100"></progress>
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                      <span>Architektur</span>
+                      <span class="text-accent">{{ architectureLevel() }}/10</span>
+                    </div>
+                    <progress class="progress progress-accent w-full h-1.5" [value]="architectureLevel() * 10" max="100"></progress>
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                      <span>Testing</span>
+                      <span class="text-info">{{ testingLevel() }}/10</span>
+                    </div>
+                    <progress class="progress progress-info w-full h-1.5" [value]="testingLevel() * 10" max="100"></progress>
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-xs font-bold mb-1">
+                      <span>Cloud & DevOps</span>
+                      <span class="text-warning">{{ cloudLevel() }}/10</span>
+                    </div>
+                    <progress class="progress progress-warning w-full h-1.5" [value]="cloudLevel() * 10" max="100"></progress>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Project suggestions -->
+            <div class="card bg-base-100 border border-base-200/50 shadow-lg">
+              <div class="card-body p-5">
+                <h3 class="text-sm uppercase font-extrabold tracking-wider text-primary mb-3">🛠 Projektvorschläge</h3>
+                <p class="text-xs opacity-50 mb-4 leading-relaxed">Diese Ideen passen zu deinen Skill-Levels und eignen sich hervorragend für dein Portfolio:</p>
+                
+                <div class="space-y-4">
+                  @for (project of projectSuggestions(); track project.title) {
+                    <div class="p-4 bg-base-200/50 rounded-xl border border-base-300/40 hover:border-primary/20 transition-all">
+                      <div class="flex justify-between items-center mb-1 gap-2">
+                        <h4 class="font-bold text-xs text-primary truncate" [title]="project.title">{{ project.title }}</h4>
+                        <span class="badge badge-accent badge-outline badge-xs whitespace-nowrap shrink-0">{{ project.difficulty }}</span>
+                      </div>
+                      <p class="text-[11px] opacity-70 leading-relaxed">{{ project.description }}</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- VIEW 3: Quiz View -->
+      @if (currentView() === 'quiz' && quizQuestions().length > 0) {
+        <div class="max-w-2xl mx-auto animate-fade-in py-6">
+          <div class="card bg-base-100 border border-base-200 shadow-2xl overflow-hidden relative">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-2xl"></div>
+
+            <div class="card-body p-6 md:p-10 relative z-10">
+              <div class="flex justify-between items-center mb-6">
+                <span class="badge badge-warning text-warning-content font-bold px-3 py-2 rounded-lg">Quiz: {{ quizTopic() }}</span>
+                <span class="text-xs font-mono opacity-50">Frage {{ currentQuestionIndex() + 1 }} von {{ quizQuestions().length }}</span>
+              </div>
+              
+              <h2 class="text-xl md:text-2xl font-bold leading-snug mb-8">
+                {{ quizQuestions()[currentQuestionIndex()].questionText }}
+              </h2>
+
+              <div class="space-y-3 mb-10">
+                @for (option of quizQuestions()[currentQuestionIndex()].options; track option; let idx = $index) {
+                  <label 
+                    class="flex items-center gap-4 p-4 bg-base-250/50 border border-base-300 rounded-xl cursor-pointer hover:bg-base-200 transition-all"
+                    [class.border-primary]="selectedQuizOption() === idx && !quizSubmitted()"
+                    [class.bg-primary/5]="selectedQuizOption() === idx && !quizSubmitted()"
+                    [class.border-success]="quizSubmitted() && idx === quizQuestions()[currentQuestionIndex()].correctOptionIndex"
+                    [class.bg-success/5]="quizSubmitted() && idx === quizQuestions()[currentQuestionIndex()].correctOptionIndex"
+                    [class.border-error]="quizSubmitted() && selectedQuizOption() === idx && idx !== quizQuestions()[currentQuestionIndex()].correctOptionIndex"
+                    [class.bg-error/5]="quizSubmitted() && selectedQuizOption() === idx && idx !== quizQuestions()[currentQuestionIndex()].correctOptionIndex"
+                    [class.opacity-50]="quizSubmitted() && idx !== quizQuestions()[currentQuestionIndex()].correctOptionIndex && idx !== selectedQuizOption()">
+                    
+                    <input 
+                      type="radio" 
+                      name="quiz-options" 
+                      [value]="idx" 
+                      [disabled]="quizSubmitted()"
+                      [checked]="selectedQuizOption() === idx"
+                      (change)="selectedQuizOption.set(idx)"
+                      class="radio radio-primary radio-sm" />
+                    
+                    <span class="font-medium text-sm leading-relaxed">{{ option }}</span>
+                  </label>
+                }
+              </div>
+
+              <!-- Action button -->
+              <div class="card-actions justify-end border-t border-base-200/50 pt-6">
+                @if (!quizSubmitted()) {
+                  <button 
+                    class="btn btn-primary btn-md rounded-lg shadow-lg shadow-primary/20 px-8" 
+                    [disabled]="selectedQuizOption() === null"
+                    (click)="submitQuizAnswer()">
+                    Antwort prüfen ✔
+                  </button>
+                } @else {
+                  <button 
+                    class="btn btn-success text-white btn-md rounded-lg shadow-lg shadow-success/20 px-8" 
+                    (click)="nextQuizQuestion()">
+                    {{ currentQuestionIndex() === quizQuestions().length - 1 ? 'Quiz beenden 🏆' : 'Nächste Frage ➡' }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- VIEW 4: Challenge Editor View -->
+      @if (currentView() === 'challenge' && selectedChallenge()) {
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in">
+          
+          <!-- Instructions Panel (4 cols) -->
+          <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <div class="card bg-base-100 border border-base-200/50 shadow-xl relative overflow-hidden">
+              <div class="absolute -right-8 -top-8 w-24 h-24 bg-accent/5 rounded-full blur-xl"></div>
+              
+              <div class="card-body p-6">
+                <div class="flex justify-between items-center mb-4">
+                  <button class="btn btn-ghost btn-xs gap-1 opacity-70 hover:opacity-100" (click)="currentView.set('dashboard')">
+                    ⬅ Zurück zum Dashboard
+                  </button>
+                  <span class="badge badge-accent badge-sm font-mono tracking-wider">Coding challenge</span>
+                </div>
+                
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
+                  {{ selectedChallenge().title }}
+                </h2>
+                
+                <div class="divider my-1 opacity-50"></div>
+                
+                <!-- Challenge Instructions -->
+                <div class="bg-base-200/50 rounded-xl p-4 border border-base-300/40 text-sm leading-relaxed text-base-content/90 font-medium whitespace-pre-line min-h-[160px]">
+                  {{ selectedChallenge().instructions }}
+                </div>
+                
+                <!-- Expected output -->
+                <div class="mt-4">
+                  <span class="text-xs uppercase font-extrabold tracking-wider opacity-40 block mb-1">Erwarteter Output</span>
+                  <code class="bg-base-300 text-success text-xs font-mono p-3 rounded-lg border border-base-200/50 block shadow-inner">
+                    {{ selectedChallenge().expectedOutput }}
+                  </code>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code Editor Panel (7 cols) -->
+          <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <div class="card bg-base-100 border border-base-200/50 shadow-xl flex-1 overflow-hidden">
+              <!-- Editor header -->
+              <div class="bg-base-200/60 border-b border-base-300/50 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full bg-error/80"></div>
+                  <div class="w-3 h-3 rounded-full bg-warning/80"></div>
+                  <div class="w-3 h-3 rounded-full bg-success/80"></div>
+                  <span class="text-xs opacity-50 font-mono ml-2">code_challenge.cs</span>
+                </div>
+                <span class="badge badge-xs badge-primary font-mono uppercase">C# 10</span>
+              </div>
+
+              <!-- Editor body -->
+              <div class="flex flex-col h-[400px]">
+                <textarea 
+                  [(ngModel)]="challengeCode"
+                  class="textarea font-mono text-sm flex-1 bg-neutral text-neutral-content p-6 leading-relaxed resize-none border-0 focus:outline-none rounded-none focus:ring-0 shadow-inner h-full w-full"
+                  placeholder="// Schreibe deinen Code hier...">
+                </textarea>
+                
+                <!-- Submission Action bar -->
+                <div class="bg-base-200/60 border-t border-base-300/50 px-4 py-3 flex justify-between items-center gap-4">
+                  <p class="text-xs opacity-50">Lösung wird via LM Studio KI-Tutor bewertet.</p>
+                  <button 
+                    class="btn btn-primary btn-sm rounded-lg shadow-lg shadow-primary/20 px-6 shrink-0 text-white" 
+                    [disabled]="isSubmitting()"
+                    (click)="submitChallenge()">
+                    @if (isSubmitting()) {
+                      <span class="loading loading-spinner loading-xs"></span>
+                      Evaluating...
+                    } @else {
+                      Lösung einreichen ✨
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Evaluation & AI Feedback Panel -->
+            @if (submissionStatus()) {
+              <div 
+                class="card border shadow-2xl transition-all duration-300 animate-fade-in"
+                [class.bg-success/5]="submissionStatus() === 'Approved'"
+                [class.border-success/30]="submissionStatus() === 'Approved'"
+                [class.bg-error/5]="submissionStatus() === 'Rejected'"
+                [class.border-error/30]="submissionStatus() === 'Rejected'"
+                [class.bg-warning/5]="submissionStatus() === 'Evaluating'"
+                [class.border-warning/30]="submissionStatus() === 'Evaluating'">
+                
+                <div class="card-body p-6">
+                  <h3 class="font-extrabold text-lg flex items-center gap-2">
+                    @if (submissionStatus() === 'Approved') {
+                      <span class="text-success text-2xl filter drop-shadow">🎉</span> AI-Feedback: Bestanden!
+                    } @if (submissionStatus() === 'Rejected') {
+                      <span class="text-error text-2xl filter drop-shadow">⚠️</span> AI-Feedback: Überarbeitung nötig
+                    } @if (submissionStatus() === 'Evaluating') {
+                      <span class="loading loading-spinner text-warning loading-sm"></span> KI analysiert Lösung...
+                    }
+                  </h3>
+                  <div class="divider my-1 opacity-40"></div>
+                  
+                  <!-- Response Text -->
+                  <div class="relative bg-base-300/40 border border-base-200/50 rounded-xl p-4 max-h-[300px] overflow-y-auto">
+                    <pre class="text-xs leading-relaxed text-base-content/90 font-mono whitespace-pre-wrap">{{ submissionFeedback() }}</pre>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+        </div>
+      }
+
+    }
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer footer-center p-8 bg-base-100 text-base-content/50 border-t border-base-200/30 mt-20">
+    <aside>
+      <p class="text-xs font-semibold">⚡ Academy.AI — Personalisierte Lernpfade & AI-Code-Bewertungen</p>
+      <p class="text-[10px] opacity-60 mt-1">Ausgeführt unter .NET 10, .NET Aspire und Angular v22</p>
+    </aside>
+  </footer>
+
+</div>
