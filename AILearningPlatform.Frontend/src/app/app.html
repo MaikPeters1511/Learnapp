@@ -579,8 +579,8 @@
                   <div class="divider my-1 opacity-40"></div>
                   
                   <!-- Response Text -->
-                  <div class="relative bg-base-300/40 border border-base-200/50 rounded-xl p-4 max-h-[300px] overflow-y-auto">
-                    <pre class="text-xs leading-relaxed text-base-content/90 font-mono whitespace-pre-wrap">{{ submissionFeedback() }}</pre>
+                  <div class="relative bg-base-300/40 border border-base-200/50 rounded-xl p-4 max-h-[300px] overflow-y-auto prose prose-invert prose-sm max-w-none">
+                    <markdown [data]="submissionFeedback()"></markdown>
                   </div>
                 </div>
               </div>

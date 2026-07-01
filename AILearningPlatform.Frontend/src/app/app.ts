@@ -1,12 +1,14 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MarkdownComponent } from 'ngx-markdown';
 import { User } from './models/user';
 import { UserService } from './services/user.service';
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule],
+  imports: [FormsModule, DecimalPipe, DatePipe, MarkdownComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

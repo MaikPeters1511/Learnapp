@@ -2,3 +2,7 @@
 
 @import 'tailwindcss';
 @plugin 'daisyui';
+@plugin '@tailwindcss/typography';
+
+/* Prism.js theme for syntax-highlighted code blocks rendered by ngx-markdown */
+@import 'prismjs/themes/prism-tomorrow.css';
