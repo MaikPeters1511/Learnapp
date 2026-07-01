@@ -1,6 +1,8 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { User } from './models/user';
+import { UserService } from './services/user.service';
 
 @Component({
   selector: 'app-root',
@@ -10,11 +12,15 @@ import { FormsModule } from '@angular/forms';
 })
 export class App implements OnInit {
   private http = inject(HttpClient);
+  private userService = inject(UserService);
   
   // State
-  currentView = signal<'assessment' | 'dashboard' | 'challenge' | 'quiz'>('assessment');
+  currentView = signal<'assessment' | 'dashboard' | 'challenge' | 'quiz' | 'profile'>('assessment');
   userId = '11111111-1111-1111-1111-111111111111';
   
+  // User Profile Data
+  userProfile = signal<User | null>(null);
+
   // Assessment Form State
   dotnetLevel = signal<number>(1);
   angularLevel = signal<number>(1);
@@ -49,6 +55,15 @@ export class App implements OnInit {
 
   ngOnInit() {
     this.checkExistingPath();
+  }
+
+  showProfile() {
+    if (!this.userProfile()) {
+      this.userService.getUserProfile().subscribe(user => {
+        this.userProfile.set(user);
+      });
+    }
+    this.currentView.set('profile');
   }
 
   checkExistingPath() {
@@ -205,3 +220,4 @@ export class App implements OnInit {
     });
   }
 }
+

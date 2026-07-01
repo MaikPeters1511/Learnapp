@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<CourseModule> CourseModules => Set<CourseModule>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,5 +34,18 @@ public class AppDbContext : DbContext
             .HasMany(m => m.Challenges)
             .WithOne(c => c.CourseModule)
             .HasForeignKey(c => c.CourseModuleId);
+        
+        modelBuilder.Entity<UserAchievement>()
+            .HasKey(ua => ua.Id);
+
+        modelBuilder.Entity<UserAchievement>()
+            .HasOne(ua => ua.User)
+            .WithMany(u => u.UserAchievements)
+            .HasForeignKey(ua => ua.UserId);
+
+        modelBuilder.Entity<UserAchievement>()
+            .HasOne(ua => ua.Achievement)
+            .WithMany()
+            .HasForeignKey(ua => ua.AchievementId);
     }
 }
