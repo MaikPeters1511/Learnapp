@@ -61,8 +61,15 @@ using (var scope = app.Services.CreateScope())
         createDatabaseCommand.ExecuteNonQuery();
     }
 
-    db.Database.EnsureCreated();
-    
+    try
+    {
+        db.Database.EnsureCreated();
+    }
+    catch (SqlException ex) when (ex.Number == 2714)
+    {
+        // Schema objects already exist from a previous startup attempt; nothing to do.
+    }
+
     // Seed a default user if not exists
     var defaultUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     if (!db.Users.Any(u => u.Id == defaultUserId))
