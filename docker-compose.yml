@@ -13,7 +13,7 @@ services:
       context: .
       dockerfile: AILearningPlatform.ApiServer/Dockerfile
     environment:
-      ConnectionStrings__sqldata: "Server=sqlserver,1433;Database=sqldata;User Id=sa;Password=${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set};TrustServerCertificate=true;"
+      ConnectionStrings__sqldata: "Server=sqlserver,1433;Database=sqldata;User Id=sa;Password=${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set};TrustServerCertificate=true;Encrypt=false;"
     depends_on:
       - sqlserver
     restart: unless-stopped
@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: AILearningPlatform.EvaluationWorker/Dockerfile
     environment:
-      ConnectionStrings__sqldata: "Server=sqlserver,1433;Database=sqldata;User Id=sa;Password=${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set};TrustServerCertificate=true;"
+      ConnectionStrings__sqldata: "Server=sqlserver,1433;Database=sqldata;User Id=sa;Password=${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set};TrustServerCertificate=true;Encrypt=false;"
     depends_on:
       - sqlserver
     restart: unless-stopped
