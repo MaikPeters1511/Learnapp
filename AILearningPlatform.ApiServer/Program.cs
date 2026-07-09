@@ -1,5 +1,5 @@
-using AILearningPlatform.ApiServer.Data;
-using AILearningPlatform.ApiServer.Models;
+using AILearningPlatform.Data;
+using AILearningPlatform.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

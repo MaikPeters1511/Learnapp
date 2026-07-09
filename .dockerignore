@@ -1,0 +1,7 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+AILearningPlatform.AppHost
+AILearningPlatform.Frontend/node_modules
+publish

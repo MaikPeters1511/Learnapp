@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using AILearningPlatform.ApiServer.Models;
+using AILearningPlatform.Data.Models;
 
-namespace AILearningPlatform.ApiServer.Data;
+namespace AILearningPlatform.Data;
 
 public class AppDbContext : DbContext
 {

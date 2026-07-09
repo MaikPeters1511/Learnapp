@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using AILearningPlatform.ApiServer.Data;
+using AILearningPlatform.Data;
 using AILearningPlatform.EvaluationWorker;
 
 var builder = Host.CreateApplicationBuilder(args);

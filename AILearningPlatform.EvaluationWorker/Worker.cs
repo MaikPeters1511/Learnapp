@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using AILearningPlatform.ApiServer.Data;
-using AILearningPlatform.ApiServer.Models;
+using AILearningPlatform.Data;
+using AILearningPlatform.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AILearningPlatform.EvaluationWorker;

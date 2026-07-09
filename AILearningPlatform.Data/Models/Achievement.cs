@@ -1,4 +1,4 @@
-namespace AILearningPlatform.ApiServer.Models;
+namespace AILearningPlatform.Data.Models;
 
 public class Achievement
 {

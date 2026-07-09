@@ -1,6 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var sqlserver = builder.AddSqlServer("sqlserver")
+    .WithDataVolume()
     .AddDatabase("sqldata");
 
 var apiService = builder.AddProject<Projects.AILearningPlatform_ApiServer>("apiservice")

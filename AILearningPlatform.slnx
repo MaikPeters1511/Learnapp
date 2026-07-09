@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="AILearningPlatform.ApiServer/AILearningPlatform.ApiServer.csproj" />
+  <Project Path="AILearningPlatform.Data/AILearningPlatform.Data.csproj" />
   <Project Path="AILearningPlatform.AppHost/AILearningPlatform.AppHost.csproj" />
   <Project Path="AILearningPlatform.EvaluationWorker/AILearningPlatform.EvaluationWorker.csproj" />
   <Project Path="AILearningPlatform.ServiceDefaults/AILearningPlatform.ServiceDefaults.csproj" />

@@ -1,0 +1,44 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set}
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    restart: unless-stopped
+
+  apiservice:
+    build:
+      context: .
+      dockerfile: AILearningPlatform.ApiServer/Dockerfile
+    environment:
+      ConnectionStrings__sqldata: "Server=sqlserver,1433;Database=sqldata;User Id=sa;Password=${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set};TrustServerCertificate=true;"
+    depends_on:
+      - sqlserver
+    restart: unless-stopped
+
+  evaluationworker:
+    build:
+      context: .
+      dockerfile: AILearningPlatform.EvaluationWorker/Dockerfile
+    environment:
+      ConnectionStrings__sqldata: "Server=sqlserver,1433;Database=sqldata;User Id=sa;Password=${SQLSERVER_PASSWORD:?SQLSERVER_PASSWORD must be set};TrustServerCertificate=true;"
+    depends_on:
+      - sqlserver
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./AILearningPlatform.Frontend
+      dockerfile: Dockerfile
+    environment:
+      API_URL: ${FRONTEND_API_URL:-}
+    depends_on:
+      - apiservice
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  sqlserver-data:

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AILearningPlatform.ApiServer.Models;
+namespace AILearningPlatform.Data.Models;
 
 public class UserAchievement
 {

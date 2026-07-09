@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AILearningPlatform.ServiceDefaults\AILearningPlatform.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\AILearningPlatform.Data\AILearningPlatform.Data.csproj" />
   </ItemGroup>
 
 </Project>

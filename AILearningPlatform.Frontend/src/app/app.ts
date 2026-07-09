@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { MarkdownComponent } from 'ngx-markdown';
 import { User } from './models/user';
 import { UserService } from './services/user.service';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -70,7 +71,7 @@ export class App implements OnInit {
 
   checkExistingPath() {
     this.loading.set(true);
-    this.http.get(`http://localhost:5000/api/learningpath/${this.userId}`).subscribe({
+    this.http.get(`${environment.apiUrl}/api/learningpath/${this.userId}`).subscribe({
       next: (path: any) => {
         this.learningPath.set(path);
         this.loadProjectSuggestions();
@@ -95,7 +96,7 @@ export class App implements OnInit {
       cloudLevel: this.cloudLevel()
     };
     
-    this.http.post('http://localhost:5000/api/assessment', body).subscribe({
+    this.http.post(`${environment.apiUrl}/api/assessment`, body).subscribe({
       next: () => {
         this.checkExistingPath();
       },
@@ -107,7 +108,7 @@ export class App implements OnInit {
   }
 
   loadProjectSuggestions() {
-    this.http.get<any[]>(`http://localhost:5000/api/projects/suggestions/${this.userId}`).subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/api/projects/suggestions/${this.userId}`).subscribe({
       next: (projects) => {
         this.projectSuggestions.set(projects);
       }
@@ -117,7 +118,7 @@ export class App implements OnInit {
   startQuiz(topic: string, level: number) {
     this.loading.set(true);
     this.quizTopic.set(topic);
-    this.http.post<any[]>('http://localhost:5000/api/quiz/generate', { topic, level }).subscribe({
+    this.http.post<any[]>(`${environment.apiUrl}/api/quiz/generate`, { topic, level }).subscribe({
       next: (questions) => {
         this.quizQuestions.set(questions);
         this.currentQuestionIndex.set(0);
@@ -173,7 +174,7 @@ export class App implements OnInit {
       code: this.challengeCode()
     };
 
-    this.http.post(`http://localhost:5000/api/challenges/${this.selectedChallenge().id}/submit`, body).subscribe({
+    this.http.post(`${environment.apiUrl}/api/challenges/${this.selectedChallenge().id}/submit`, body).subscribe({
       next: (submission: any) => {
         this.pollSubmissionResult(submission.id);
       },
@@ -187,7 +188,7 @@ export class App implements OnInit {
 
   pollSubmissionResult(submissionId: string) {
     const interval = setInterval(() => {
-      this.http.get(`http://localhost:5000/api/challenges/${this.selectedChallenge().id}/submissions/${this.userId}`).subscribe({
+      this.http.get(`${environment.apiUrl}/api/challenges/${this.selectedChallenge().id}/submissions/${this.userId}`).subscribe({
         next: (submissions: any) => {
           const latest = submissions.find((s: any) => s.id === submissionId);
           if (latest && latest.status !== 'Pending' && latest.status !== 'Evaluating') {
@@ -209,13 +210,13 @@ export class App implements OnInit {
   }
 
   reloadLearningPath() {
-    this.http.get(`http://localhost:5000/api/learningpath/${this.userId}`).subscribe((path: any) => {
+    this.http.get(`${environment.apiUrl}/api/learningpath/${this.userId}`).subscribe((path: any) => {
       this.learningPath.set(path);
     });
   }
 
   completeModule(module: any) {
-    this.http.post(`http://localhost:5000/api/modules/${module.id}/complete`, {}).subscribe({
+    this.http.post(`${environment.apiUrl}/api/modules/${module.id}/complete`, {}).subscribe({
       next: () => {
         this.reloadLearningPath();
       }
