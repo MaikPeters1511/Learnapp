@@ -36,8 +36,8 @@ services:
       API_URL: ${FRONTEND_API_URL:-}
     depends_on:
       - apiservice
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     restart: unless-stopped
 
 volumes:
