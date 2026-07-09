@@ -1,5 +1,6 @@
 using AILearningPlatform.Data;
 using AILearningPlatform.Data.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +44,23 @@ app.UseHttpsRedirection();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    // Create the target database via a "master" connection first. Some SQL Server-compatible
+    // engines (e.g. Azure SQL Edge) report a "database doesn't exist" login failure in a form
+    // that EF Core's EnsureCreated() doesn't recognize, causing it to throw instead of creating
+    // the database itself.
+    var masterConnectionStringBuilder = new SqlConnectionStringBuilder(db.Database.GetConnectionString())
+    {
+        InitialCatalog = "master"
+    };
+    using (var masterConnection = new SqlConnection(masterConnectionStringBuilder.ConnectionString))
+    {
+        masterConnection.Open();
+        using var createDatabaseCommand = masterConnection.CreateCommand();
+        createDatabaseCommand.CommandText = "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'sqldata') CREATE DATABASE sqldata";
+        createDatabaseCommand.ExecuteNonQuery();
+    }
+
     db.Database.EnsureCreated();
     
     // Seed a default user if not exists
