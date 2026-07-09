@@ -11,12 +11,16 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
+    private readonly string _lmStudioUrl;
+    private readonly string _lmStudioModel;
 
-    public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider)
+    public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+        _lmStudioUrl = configuration["LmStudio:BaseUrl"] ?? "http://localhost:1234";
+        _lmStudioModel = configuration["LmStudio:Model"] ?? "local-model";
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -70,9 +74,9 @@ Submitted Code:
 Review this code. Determine if it solves the challenge correctly. Provide detailed feedback.
 End your response with either [APPROVED] or [REJECTED] on a new line.";
 
-                        var response = await _httpClient.PostAsJsonAsync("http://localhost:1234/v1/chat/completions", new
+                        var response = await _httpClient.PostAsJsonAsync($"{_lmStudioUrl}/v1/chat/completions", new
                         {
-                            model = "local-model",
+                            model = _lmStudioModel,
                             messages = new[]
                             {
                                 new { role = "system", content = "You are an expert .NET/Angular tutor who reviews code challenges and provides helpful pedagogical feedback." },
