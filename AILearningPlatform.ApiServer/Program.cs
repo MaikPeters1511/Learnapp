@@ -40,47 +40,75 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Automatically initialize the database (migrations/creation)
+// Automatically initialize the database (migrations/creation). Retries on transient
+// connection failures instead of crashing the whole process, since a momentary hiccup
+// reaching the database (e.g. under resource pressure) shouldn't take Kestrel down with it.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
 
-    // Create the target database via a "master" connection first. Some SQL Server-compatible
-    // engines (e.g. Azure SQL Edge) report a "database doesn't exist" login failure in a form
-    // that EF Core's EnsureCreated() doesn't recognize, causing it to throw instead of creating
-    // the database itself.
-    var masterConnectionStringBuilder = new SqlConnectionStringBuilder(db.Database.GetConnectionString())
+    const int maxAttempts = 5;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
     {
-        InitialCatalog = "master"
-    };
-    using (var masterConnection = new SqlConnection(masterConnectionStringBuilder.ConnectionString))
-    {
-        masterConnection.Open();
-        using var createDatabaseCommand = masterConnection.CreateCommand();
-        createDatabaseCommand.CommandText = "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'sqldata') CREATE DATABASE sqldata";
-        createDatabaseCommand.ExecuteNonQuery();
+        try
+        {
+            // Create the target database via a "master" connection first. Some SQL Server-compatible
+            // engines (e.g. Azure SQL Edge) report a "database doesn't exist" login failure in a form
+            // that EF Core's EnsureCreated() doesn't recognize, causing it to throw instead of creating
+            // the database itself.
+            var masterConnectionStringBuilder = new SqlConnectionStringBuilder(db.Database.GetConnectionString())
+            {
+                InitialCatalog = "master"
+            };
+            using (var masterConnection = new SqlConnection(masterConnectionStringBuilder.ConnectionString))
+            {
+                masterConnection.Open();
+                using var createDatabaseCommand = masterConnection.CreateCommand();
+                createDatabaseCommand.CommandText = "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'sqldata') CREATE DATABASE sqldata";
+                createDatabaseCommand.ExecuteNonQuery();
+            }
+
+            try
+            {
+                db.Database.EnsureCreated();
+            }
+            catch (SqlException ex) when (ex.Number == 2714)
+            {
+                // Schema objects already exist from a previous startup attempt; nothing to do.
+            }
+
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            startupLogger.LogWarning(ex, "Database initialization attempt {Attempt}/{MaxAttempts} failed, retrying...", attempt, maxAttempts);
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+        catch (Exception ex)
+        {
+            startupLogger.LogError(ex, "Database initialization failed after {MaxAttempts} attempts; continuing startup anyway.", maxAttempts);
+        }
     }
 
     try
     {
-        db.Database.EnsureCreated();
-    }
-    catch (SqlException ex) when (ex.Number == 2714)
-    {
-        // Schema objects already exist from a previous startup attempt; nothing to do.
-    }
-
-    // Seed a default user if not exists
-    var defaultUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    if (!db.Users.Any(u => u.Id == defaultUserId))
-    {
-        db.Users.Add(new User
+        // Seed a default user if not exists
+        var defaultUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        if (!db.Users.Any(u => u.Id == defaultUserId))
         {
-            Id = defaultUserId,
-            Name = "John Doe",
-            Email = "john.doe@example.com"
-        });
-        db.SaveChanges();
+            db.Users.Add(new User
+            {
+                Id = defaultUserId,
+                Name = "John Doe",
+                Email = "john.doe@example.com"
+            });
+            db.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogError(ex, "Failed to seed default user.");
     }
 }
 
