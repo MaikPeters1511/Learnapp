@@ -71,7 +71,7 @@ Submitted Code:
 {submission.Code}
 ```
 
-Review this code. Determine if it solves the challenge correctly. Provide detailed feedback.
+Review this code. Determine if it solves the challenge correctly. Provide detailed feedback in German.
 End your response with either [APPROVED] or [REJECTED] on a new line.";
 
                         var response = await _httpClient.PostAsJsonAsync($"{_lmStudioUrl}/v1/chat/completions", new
@@ -79,7 +79,7 @@ End your response with either [APPROVED] or [REJECTED] on a new line.";
                             model = _lmStudioModel,
                             messages = new[]
                             {
-                                new { role = "system", content = "You are an expert .NET/Angular tutor who reviews code challenges and provides helpful pedagogical feedback." },
+                                new { role = "system", content = "You are an expert .NET/Angular tutor who reviews code challenges and provides helpful pedagogical feedback. Always answer in German (Deutsch), regardless of the language of the input." },
                                 new { role = "user", content = prompt }
                             },
                             temperature = 0.2
@@ -99,13 +99,13 @@ End your response with either [APPROVED] or [REJECTED] on a new line.";
                         else
                         {
                             _logger.LogWarning("LM Studio returned non-success code: {StatusCode}", response.StatusCode);
-                            feedback = "AI Review offline. Automatically approved for demonstration purposes. Code looks clean!";
+                            feedback = "KI-Bewertung offline. Automatisch genehmigt zu Demonstrationszwecken. Der Code sieht sauber aus!";
                         }
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to call LM Studio API. Mocking successful evaluation.");
-                        feedback = "LM Studio connection failed. Mock approval: Good job! Keep practicing.";
+                        feedback = "Verbindung zu LM Studio fehlgeschlagen. Automatische Genehmigung: Gut gemacht, weiter so!";
                     }
 
                     submission.Feedback = feedback;

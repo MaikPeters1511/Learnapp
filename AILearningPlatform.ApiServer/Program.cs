@@ -334,7 +334,7 @@ app.MapPost("/api/quiz/generate", async (QuizRequest request) =>
             model = lmStudioModel,
             messages = new[]
             {
-                new { role = "system", content = "You are a quiz generator. Output ONLY a valid raw JSON array of 3 questions without markdown blocks. Format: [{\"questionText\":\"...\",\"options\":[\"...\",\"...\"],\"correctOptionIndex\":0}]" },
+                new { role = "system", content = "You are a quiz generator. Write all question and option text in German (Deutsch). Output ONLY a valid raw JSON array of 3 questions without markdown blocks. Format: [{\"questionText\":\"...\",\"options\":[\"...\",\"...\"],\"correctOptionIndex\":0}]" },
                 new { role = "user", content = $"Generate 3 multiple-choice questions for {request.Topic} at level {request.Level}." }
             },
             temperature = 0.5
@@ -390,7 +390,7 @@ app.MapGet("/api/projects/suggestions/{userId}", async (Guid userId, AppDbContex
             model = lmStudioModel,
             messages = new[]
             {
-                new { role = "system", content = "You are a coding career advisor. Generate 3 project ideas matching the user's level. Output ONLY a valid raw JSON array of objects without markdown blocks. Format: [{\"title\":\"...\",\"description\":\"...\",\"difficulty\":\"...\"}]" },
+                new { role = "system", content = "You are a coding career advisor. Generate 3 project ideas matching the user's level. Write the title, description and difficulty text in German (Deutsch). Output ONLY a valid raw JSON array of objects without markdown blocks. Format: [{\"title\":\"...\",\"description\":\"...\",\"difficulty\":\"...\"}]" },
                 new { role = "user", content = $"Suggest 3 projects for level {avgLevel} out of 10." }
             },
             temperature = 0.5
