@@ -5,7 +5,8 @@ using AILearningPlatform.EvaluationWorker;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddSqlServerDbContext<AppDbContext>("sqldata");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("sqldata")));
 builder.Services.AddHttpClient();
 
 builder.Services.AddHostedService<Worker>();

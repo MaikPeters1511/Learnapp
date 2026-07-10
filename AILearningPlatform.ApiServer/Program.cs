@@ -1,6 +1,5 @@
 using AILearningPlatform.Data;
 using AILearningPlatform.Data.Models;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +8,8 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddOpenApi();
-builder.AddSqlServerDbContext<AppDbContext>("sqldata");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("sqldata")));
 builder.Services.AddHttpClient();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -27,6 +27,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+var lmStudioUrl = builder.Configuration["LmStudio:BaseUrl"] ?? "http://localhost:1234";
+var lmStudioModel = builder.Configuration["LmStudio:Model"] ?? "local-model";
+
 var app = builder.Build();
 
 app.UseCors("AllowAll");
@@ -41,8 +44,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Automatically initialize the database (migrations/creation). Retries on transient
-// connection failures instead of crashing the whole process, since a momentary hiccup
-// reaching the database (e.g. under resource pressure) shouldn't take Kestrel down with it.
+// failures (e.g. the shared SQLite volume not mounted yet) instead of crashing the
+// whole process, since a momentary hiccup shouldn't take Kestrel down with it.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -53,31 +56,7 @@ using (var scope = app.Services.CreateScope())
     {
         try
         {
-            // Create the target database via a "master" connection first. Some SQL Server-compatible
-            // engines (e.g. Azure SQL Edge) report a "database doesn't exist" login failure in a form
-            // that EF Core's EnsureCreated() doesn't recognize, causing it to throw instead of creating
-            // the database itself.
-            var masterConnectionStringBuilder = new SqlConnectionStringBuilder(db.Database.GetConnectionString())
-            {
-                InitialCatalog = "master"
-            };
-            using (var masterConnection = new SqlConnection(masterConnectionStringBuilder.ConnectionString))
-            {
-                masterConnection.Open();
-                using var createDatabaseCommand = masterConnection.CreateCommand();
-                createDatabaseCommand.CommandText = "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'sqldata') CREATE DATABASE sqldata";
-                createDatabaseCommand.ExecuteNonQuery();
-            }
-
-            try
-            {
-                db.Database.EnsureCreated();
-            }
-            catch (SqlException ex) when (ex.Number == 2714)
-            {
-                // Schema objects already exist from a previous startup attempt; nothing to do.
-            }
-
+            db.Database.EnsureCreated();
             break;
         }
         catch (Exception ex) when (attempt < maxAttempts)
@@ -350,9 +329,9 @@ app.MapPost("/api/quiz/generate", async (QuizRequest request) =>
     using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
     try
     {
-        var response = await httpClient.PostAsJsonAsync("http://localhost:1234/v1/chat/completions", new
+        var response = await httpClient.PostAsJsonAsync($"{lmStudioUrl}/v1/chat/completions", new
         {
-            model = "local-model",
+            model = lmStudioModel,
             messages = new[]
             {
                 new { role = "system", content = "You are a quiz generator. Output ONLY a valid raw JSON array of 3 questions without markdown blocks. Format: [{\"questionText\":\"...\",\"options\":[\"...\",\"...\"],\"correctOptionIndex\":0}]" },
@@ -406,9 +385,9 @@ app.MapGet("/api/projects/suggestions/{userId}", async (Guid userId, AppDbContex
     using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
     try
     {
-        var response = await httpClient.PostAsJsonAsync("http://localhost:1234/v1/chat/completions", new
+        var response = await httpClient.PostAsJsonAsync($"{lmStudioUrl}/v1/chat/completions", new
         {
-            model = "local-model",
+            model = lmStudioModel,
             messages = new[]
             {
                 new { role = "system", content = "You are a coding career advisor. Generate 3 project ideas matching the user's level. Output ONLY a valid raw JSON array of objects without markdown blocks. Format: [{\"title\":\"...\",\"description\":\"...\",\"difficulty\":\"...\"}]" },
