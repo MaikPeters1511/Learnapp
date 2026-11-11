@@ -28,7 +28,7 @@ e2e/*.js
 e2e/*.map
 
 # System Files
-.DS_Store/
+.DS_Store
 
 ### DotnetCore ###
 # .NET Core build folders
@@ -297,3 +297,8 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+### Local SQLite database (created at runtime, see AppHost) ###
+sqldata.db
+sqldata.db-shm
+sqldata.db-wal
