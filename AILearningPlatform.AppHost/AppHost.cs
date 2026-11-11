@@ -20,6 +20,15 @@ var apiService = builder.AddProject<Projects.AILearningPlatform_ApiServer>("apis
     .WithHttpEndpoint(port: 5000, name: "http")
     .WithEnvironment("ConnectionStrings__sqldata", sqliteConnectionString);
 
+// Geheimer Schlüssel zum Signieren der Anmelde-Tokens. Einmalig setzen, er bleibt dann über Neustarts gleich:
+//   dotnet user-secrets set "Auth:JwtKey" "<zufälliger Text, mindestens 32 Zeichen>" --project AILearningPlatform.AppHost
+// Ohne Schlüssel nutzt der ApiServer in Development einen zufälligen pro Start (Anmeldungen enden dann beim Neustart).
+var jwtKey = builder.Configuration["Auth:JwtKey"];
+if (!string.IsNullOrWhiteSpace(jwtKey))
+{
+    apiService.WithEnvironment("Auth__JwtKey", jwtKey);
+}
+
 var evaluationWorker = builder.AddProject<Projects.AILearningPlatform_EvaluationWorker>("evaluationworker")
     .WithEnvironment("ConnectionStrings__sqldata", sqliteConnectionString);
 

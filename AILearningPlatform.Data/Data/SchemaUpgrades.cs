@@ -23,6 +23,12 @@ public static class SchemaUpgrades
             Execute(db, "ALTER TABLE \"Users\" ADD COLUMN \"QuizzesCompleted\" INTEGER NOT NULL DEFAULT 0");
         }
 
+        // Users.PasswordHash: gehashtes Passwort für die Anmeldung (null = Konto ohne Anmeldung).
+        if (!ColumnExists(db, "Users", "PasswordHash"))
+        {
+            Execute(db, "ALTER TABLE \"Users\" ADD COLUMN \"PasswordHash\" TEXT NULL");
+        }
+
         // Eindeutige E-Mail, ohne Beachtung der Groß-/Kleinschreibung (passend zur Prüfung im API-Endpunkt).
         if (!IndexExists(db, UniqueEmailIndex))
         {

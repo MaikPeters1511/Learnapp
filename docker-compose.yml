@@ -5,6 +5,9 @@ services:
       dockerfile: AILearningPlatform.ApiServer/Dockerfile
     environment:
       ConnectionStrings__sqldata: "Data Source=/data/sqldata.db"
+      # Geheimer Schlüssel zum Signieren der Anmelde-Tokens (mindestens 32 Zeichen, zufällig).
+      # Muss gesetzt sein, z. B. in einer .env-Datei: AUTH_JWT_KEY=...
+      Auth__JwtKey: ${AUTH_JWT_KEY:?Bitte AUTH_JWT_KEY setzen (mindestens 32 zufällige Zeichen)}
     volumes:
       - sqldata:/data
     restart: unless-stopped

@@ -1,0 +1,208 @@
+<div data-theme="night" class="relative min-h-screen overflow-hidden bg-base-300 text-base-content">
+
+  <!-- Animierter Hintergrund -->
+  <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+    <span class="blob absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-primary/40 blur-3xl"></span>
+    <span class="blob blob-2 absolute -right-32 -bottom-40 h-[30rem] w-[30rem] rounded-full bg-secondary/40 blur-3xl"></span>
+    <span class="blob blob-3 absolute top-1/3 left-1/2 h-96 w-96 rounded-full bg-accent/20 blur-3xl"></span>
+    <span class="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(currentColor_1px,transparent_1px),linear-gradient(90deg,currentColor_1px,transparent_1px)] [background-size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"></span>
+  </div>
+
+  <div class="relative z-10 mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-4 py-10 lg:grid-cols-2 lg:px-8">
+
+    <!-- Hero (ab großen Bildschirmen) -->
+    <section class="hidden lg:block" aria-hidden="true">
+      <p class="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+        <span class="text-3xl">⚡</span>
+        <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Academy.AI</span>
+      </p>
+
+      <h1 class="mt-8 text-5xl leading-tight font-black tracking-tight">
+        Dein Lernpfad.<br />
+        <span class="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Deine KI. Dein Tempo.</span>
+      </h1>
+      <p class="mt-4 max-w-md text-lg text-base-content/70">
+        Starte mit einem kurzen Skill-Check und lerne mit Aufgaben, Quizzen und direktem Feedback zu deinem Code.
+      </p>
+
+      <ul class="mt-8 space-y-4">
+        <li class="flex items-start gap-4">
+          <span class="badge badge-soft badge-primary h-10 w-10 text-lg">🎯</span>
+          <div>
+            <p class="font-bold">Personalisierter Lernpfad</p>
+            <p class="text-sm text-base-content/60">Module, die zu deinem Wissensstand passen.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-4">
+          <span class="badge badge-soft badge-secondary h-10 w-10 text-lg">🤖</span>
+          <div>
+            <p class="font-bold">KI-Feedback zu deinem Code</p>
+            <p class="text-sm text-base-content/60">Reiche Lösungen ein und bekomme eine ausführliche Bewertung.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-4">
+          <span class="badge badge-soft badge-accent h-10 w-10 text-lg">🏆</span>
+          <div>
+            <p class="font-bold">XP, Level und Streaks</p>
+            <p class="text-sm text-base-content/60">Sammle Erfahrung und bleib dran.</p>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Dekorative Vorschau-Karte -->
+      <div class="float card mt-10 w-72 border border-base-content/10 bg-base-100/60 shadow-xl backdrop-blur-md">
+        <div class="card-body gap-2 p-5">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-bold">Level 7</span>
+            <span class="badge badge-soft badge-warning">🔥 12 Tage</span>
+          </div>
+          <p class="text-2xl font-black text-accent">640 XP</p>
+          <progress class="progress progress-accent" value="40" max="100"></progress>
+          <p class="text-xs text-base-content/60">60 XP bis Level 8</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Anmelde-Karte -->
+    <section class="mx-auto w-full max-w-md">
+
+      <!-- Marke für kleine Bildschirme -->
+      <p class="mb-6 flex items-center justify-center gap-2 text-2xl font-extrabold tracking-tight lg:hidden">
+        <span class="text-3xl">⚡</span>
+        <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Academy.AI</span>
+      </p>
+
+      <div class="rise card border border-base-content/10 bg-base-100/70 shadow-2xl backdrop-blur-xl">
+        <div class="card-body gap-5 p-6 sm:p-8">
+
+          <div role="tablist" class="tabs tabs-box w-full">
+            <button type="button" role="tab" class="tab flex-1" [class.tab-active]="!isRegister()"
+                    [attr.aria-selected]="!isRegister()" (click)="setMode('login')">Anmelden</button>
+            <button type="button" role="tab" class="tab flex-1" [class.tab-active]="isRegister()"
+                    [attr.aria-selected]="isRegister()" (click)="setMode('register')">Registrieren</button>
+          </div>
+
+          <!-- Je Modus ein eigener Block, damit die Einblend-Animation beim Wechsel neu startet. -->
+          @if (isRegister()) {
+            <div class="appear">
+              <h2 class="text-2xl font-black tracking-tight">Konto erstellen ✨</h2>
+              <p class="mt-1 text-sm text-base-content/60">In einer Minute startklar: Dein Lernpfad wartet.</p>
+            </div>
+          } @else {
+            <div class="appear">
+              <h2 class="text-2xl font-black tracking-tight">Willkommen zurück 👋</h2>
+              <p class="mt-1 text-sm text-base-content/60">Melde dich an und mach da weiter, wo du aufgehört hast.</p>
+            </div>
+          }
+
+          <form (ngSubmit)="submit()" novalidate class="space-y-1">
+
+            @if (isRegister()) {
+              <fieldset class="fieldset appear">
+                <legend class="fieldset-legend">Name</legend>
+                <label class="input w-full" [class.input-error]="submitted() && errors().name">
+                  <svg class="h-4 w-4 opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+                  <input type="text" name="name" class="grow" placeholder="Dein Name" maxlength="50" autocomplete="name"
+                         aria-label="Name" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+                </label>
+                @if (submitted() && errors().name) {
+                  <p class="label text-error">{{ errors().name }}</p>
+                }
+              </fieldset>
+            }
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">E-Mail</legend>
+              <label class="input w-full" [class.input-error]="submitted() && errors().email">
+                <svg class="h-4 w-4 opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+                <input type="email" name="email" class="grow" placeholder="du&#64;beispiel.de" maxlength="254" autocomplete="email"
+                       aria-label="E-Mail" [ngModel]="email()" (ngModelChange)="email.set($event)" />
+              </label>
+              @if (submitted() && errors().email) {
+                <p class="label text-error">{{ errors().email }}</p>
+              }
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Passwort</legend>
+              <label class="input w-full" [class.input-error]="submitted() && errors().password">
+                <svg class="h-4 w-4 opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                <input [type]="showPassword() ? 'text' : 'password'" name="password" class="grow"
+                       [placeholder]="isRegister() ? 'Mindestens 8 Zeichen' : 'Dein Passwort'" [maxlength]="maxPasswordLength"
+                       [attr.autocomplete]="isRegister() ? 'new-password' : 'current-password'"
+                       aria-label="Passwort" [ngModel]="password()" (ngModelChange)="password.set($event)" />
+                <button type="button" class="btn btn-ghost btn-xs btn-circle" (click)="showPassword.set(!showPassword())"
+                        [attr.aria-label]="showPassword() ? 'Passwort verbergen' : 'Passwort anzeigen'" [attr.aria-pressed]="showPassword()">
+                  @if (showPassword()) {
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" /><path d="M9.9 5.1A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-3.2 4.2M6.1 6.1A17 17 0 0 0 2.5 12S6 19 12 19a9.7 9.7 0 0 0 4-.9" /></svg>
+                  } @else {
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                  }
+                </button>
+              </label>
+              @if (submitted() && errors().password) {
+                <p class="label text-error">{{ errors().password }}</p>
+              }
+
+              @if (isRegister() && password().length > 0) {
+                <div class="appear mt-1 flex items-center gap-3" aria-live="polite">
+                  <progress class="progress h-1.5 flex-1"
+                            [class.progress-error]="strength() === 1" [class.progress-warning]="strength() === 2"
+                            [class.progress-info]="strength() === 3" [class.progress-success]="strength() === 4"
+                            [value]="strength()" max="4"></progress>
+                  <span class="w-20 text-right text-xs text-base-content/70">{{ strengthLabel() }}</span>
+                </div>
+              }
+            </fieldset>
+
+            @if (isRegister()) {
+              <fieldset class="fieldset appear">
+                <legend class="fieldset-legend">Passwort wiederholen</legend>
+                <label class="input w-full" [class.input-error]="confirm().length > 0 && !passwordsMatch()"
+                       [class.input-success]="confirm().length > 0 && passwordsMatch()">
+                  <svg class="h-4 w-4 opacity-60" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                  <input [type]="showPassword() ? 'text' : 'password'" name="confirm" class="grow" placeholder="Noch einmal eingeben"
+                         [maxlength]="maxPasswordLength" autocomplete="new-password" aria-label="Passwort wiederholen"
+                         [ngModel]="confirm()" (ngModelChange)="confirm.set($event)" />
+                </label>
+                @if (confirm().length > 0 && !passwordsMatch()) {
+                  <p class="label text-error">Die Passwörter stimmen nicht überein.</p>
+                }
+              </fieldset>
+            }
+
+            @if (error()) {
+              <div role="alert" class="alert alert-error alert-soft appear mt-2">
+                <svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+                <span>{{ error() }}</span>
+              </div>
+            }
+
+            <button type="submit" class="btn btn-primary btn-block mt-4" [disabled]="submitting()">
+              @if (submitting()) {
+                <span class="loading loading-spinner loading-sm"></span>
+                {{ isRegister() ? 'Konto wird erstellt …' : 'Anmeldung läuft …' }}
+              } @else {
+                {{ isRegister() ? 'Konto erstellen' : 'Anmelden' }}
+              }
+            </button>
+          </form>
+
+          <p class="text-center text-sm text-base-content/70">
+            @if (isRegister()) {
+              Schon registriert?
+              <button type="button" class="link link-hover font-bold" (click)="setMode('login')">Jetzt anmelden</button>
+            } @else {
+              Noch kein Konto?
+              <button type="button" class="link link-hover font-bold" (click)="setMode('register')">Jetzt registrieren</button>
+            }
+          </p>
+
+          <p class="text-center text-xs text-base-content/50">
+            🔒 Dein Passwort wird nur als gesalzener Hash gespeichert.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

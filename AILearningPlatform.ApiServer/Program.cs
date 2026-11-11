@@ -1,7 +1,14 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Threading.RateLimiting;
+using AILearningPlatform.ApiServer.Auth;
 using AILearningPlatform.Data;
 using AILearningPlatform.Data.Gamification;
 using AILearningPlatform.Data.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,12 +35,88 @@ builder.Services.AddCors(options =>
     });
 });
 
+// --- Authentifizierung: Passwort-Hashing (PBKDF2) und JWT-Anmeldung ---
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+
+// Der Signierschlüssel kommt aus der Konfiguration (Auth:JwtKey, mindestens 32 Zeichen) und gehört nie in den Code.
+// Nur in Development gibt es als Notlösung einen zufälligen Schlüssel pro Start (Anmeldungen gelten dann bis zum Neustart).
+var jwtKeyText = builder.Configuration["Auth:JwtKey"];
+var jwtKeyIsEphemeral = false;
+if (string.IsNullOrWhiteSpace(jwtKeyText))
+{
+    if (!builder.Environment.IsDevelopment())
+        throw new InvalidOperationException("Auth:JwtKey ist nicht konfiguriert (mindestens 32 Zeichen, zufällig und geheim).");
+    jwtKeyText = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
+    jwtKeyIsEphemeral = true;
+}
+if (jwtKeyText.Length < 32)
+    throw new InvalidOperationException("Auth:JwtKey ist zu kurz (mindestens 32 Zeichen).");
+
+var jwtSettings = new JwtSettings(
+    new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtKeyText)),
+    Issuer: "AILearningPlatform",
+    Audience: "AILearningPlatform.Frontend",
+    Lifetime: TimeSpan.FromHours(12));
+builder.Services.AddSingleton(jwtSettings);
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false; // Claim-Namen wie "sub" unverändert lassen
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = jwtSettings.Key,
+            ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1),
+            NameClaimType = "name"
+        };
+    });
+builder.Services.AddAuthorization();
+
+// Bremse gegen Passwort-Raten: Login und Registrierung pro IP-Adresse begrenzen.
+var authAttemptsPerMinute = builder.Configuration.GetValue("Auth:AttemptsPerMinute", 10);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = authAttemptsPerMinute,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Zu viele Versuche. Bitte warte eine Minute und versuche es dann erneut." }, cancellationToken);
+    };
+});
+
 var lmStudioUrl = builder.Configuration["LmStudio:BaseUrl"] ?? "http://localhost:1234";
 var lmStudioModel = builder.Configuration["LmStudio:Model"] ?? "local-model";
 
 var app = builder.Build();
 
 app.UseCors("AllowAll");
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+
+if (jwtKeyIsEphemeral)
+{
+    app.Logger.LogWarning(
+        "Auth:JwtKey ist nicht gesetzt: Es wird ein zufälliger Schlüssel pro Start verwendet, alle Anmeldungen enden beim Neustart. " +
+        "Für dauerhafte Anmeldungen: dotnet user-secrets set \"Auth:JwtKey\" <zufälliger Text, mind. 32 Zeichen> --project AILearningPlatform.AppHost");
+}
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
@@ -71,55 +154,32 @@ using (var scope = app.Services.CreateScope())
             startupLogger.LogError(ex, "Database initialization failed after {MaxAttempts} attempts; continuing startup anyway.", maxAttempts);
         }
     }
-
-    try
-    {
-        // Seed a default user if not exists
-        var defaultUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        if (!db.Users.Any(u => u.Id == defaultUserId))
-        {
-            db.Users.Add(new User
-            {
-                Id = defaultUserId,
-                Name = "John Doe",
-                Email = "john.doe@example.com"
-            });
-            db.SaveChanges();
-        }
-    }
-    catch (Exception ex)
-    {
-        startupLogger.LogError(ex, "Failed to seed default user.");
-    }
 }
 
 // Endpoints
 
-// Get or Create User
-app.MapGet("/api/users/{id}", async (Guid id, AppDbContext db) =>
+// Registrierung und Anmeldung sind öffentlich, alles unter /api verlangt eine Anmeldung.
+app.MapPublicAuthEndpoints();
+var api = app.MapGroup("/api").RequireAuthorization();
+api.MapAuthenticatedAuthEndpoints();
+
+// Eigenes Benutzerobjekt (Konten entstehen nur noch über die Registrierung).
+api.MapGet("/users/{id}", async (Guid id, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.ForbidUnlessSelf(id) is { } denied) return denied;
+
     var user = await db.Users
         .Include(u => u.SkillProfile)
         .FirstOrDefaultAsync(u => u.Id == id);
-        
-    if (user == null)
-    {
-        user = new User
-        {
-            Id = id,
-            Name = "Demo User",
-            // Pro Benutzer eindeutig, weil die E-Mail in der Datenbank eindeutig sein muss.
-            Email = $"demo-{id:N}@example.com"
-        };
-        db.Users.Add(user);
-        await db.SaveChangesAsync();
-    }
-    return Results.Ok(user);
+
+    return user == null ? Results.NotFound("User not found") : Results.Ok(user);
 });
 
 // Name und E-Mail im Profil ändern.
-app.MapPut("/api/users/{id}/profile", async (Guid id, UpdateProfileRequest request, AppDbContext db) =>
+api.MapPut("/users/{id}/profile", async (Guid id, UpdateProfileRequest request, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.ForbidUnlessSelf(id) is { } denied) return denied;
+
     var name = (request.Name ?? string.Empty).Trim();
     var email = (request.Email ?? string.Empty).Trim();
 
@@ -155,8 +215,10 @@ app.MapPut("/api/users/{id}/profile", async (Guid id, UpdateProfileRequest reque
 
 // Profil mit echten Daten: Stammdaten, XP/Level, Streak, Einstufung, Statistik und Abzeichen.
 // Abzeichen werden aus den vorhandenen Daten abgeleitet (keine eigene Tabelle nötig).
-app.MapGet("/api/users/{id}/profile", async (Guid id, AppDbContext db) =>
+api.MapGet("/users/{id}/profile", async (Guid id, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.ForbidUnlessSelf(id) is { } denied) return denied;
+
     var user = await db.Users.Include(u => u.SkillProfile).FirstOrDefaultAsync(u => u.Id == id);
     if (user == null) return Results.NotFound("User not found");
 
@@ -222,8 +284,12 @@ app.MapGet("/api/users/{id}/profile", async (Guid id, AppDbContext db) =>
 });
 
 // Submit Skill Assessment
-app.MapPost("/api/assessment", async (AssessmentRequest request, AppDbContext db) =>
+api.MapPost("/assessment", async (AssessmentRequest request, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    // Die Benutzer-ID kommt aus dem Token, nie aus dem Request.
+    if (caller.GetUserId() is not { } callerId) return Results.Unauthorized();
+    request = request with { UserId = callerId };
+
     var user = await db.Users.FindAsync(request.UserId);
     if (user == null) return Results.NotFound("User not found");
 
@@ -374,8 +440,10 @@ app.MapPost("/api/assessment", async (AssessmentRequest request, AppDbContext db
 });
 
 // Get Learning Path
-app.MapGet("/api/learningpath/{userId}", async (Guid userId, AppDbContext db) =>
+api.MapGet("/learningpath/{userId}", async (Guid userId, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.ForbidUnlessSelf(userId) is { } denied) return denied;
+
     var path = await db.LearningPaths
         .Include(p => p.Modules)
         .ThenInclude(m => m.Challenges)
@@ -389,8 +457,11 @@ app.MapGet("/api/learningpath/{userId}", async (Guid userId, AppDbContext db) =>
 });
 
 // Submit Challenge Code
-app.MapPost("/api/challenges/{challengeId}/submit", async (Guid challengeId, SubmissionRequest request, AppDbContext db) =>
+api.MapPost("/challenges/{challengeId}/submit", async (Guid challengeId, SubmissionRequest request, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.GetUserId() is not { } callerId) return Results.Unauthorized();
+    request = request with { UserId = callerId };
+
     var challenge = await db.Challenges.FindAsync(challengeId);
     if (challenge == null) return Results.NotFound("Challenge not found");
 
@@ -417,8 +488,10 @@ app.MapPost("/api/challenges/{challengeId}/submit", async (Guid challengeId, Sub
 });
 
 // Get Submissions for Challenge
-app.MapGet("/api/challenges/{challengeId}/submissions/{userId}", async (Guid challengeId, Guid userId, AppDbContext db) =>
+api.MapGet("/challenges/{challengeId}/submissions/{userId}", async (Guid challengeId, Guid userId, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.ForbidUnlessSelf(userId) is { } denied) return denied;
+
     var submissions = await db.Submissions
         .Where(s => s.ChallengeId == challengeId && s.UserId == userId)
         .OrderByDescending(s => s.SubmittedAt)
@@ -428,10 +501,13 @@ app.MapGet("/api/challenges/{challengeId}/submissions/{userId}", async (Guid cha
 });
 
 // Mark Module Complete
-app.MapPost("/api/modules/{moduleId}/complete", async (Guid moduleId, AppDbContext db) =>
+api.MapPost("/modules/{moduleId}/complete", async (Guid moduleId, ClaimsPrincipal caller, AppDbContext db) =>
 {
     var module = await db.CourseModules.Include(m => m.LearningPath).FirstOrDefaultAsync(m => m.Id == moduleId);
     if (module == null) return Results.NotFound("Module not found");
+
+    // Nur das eigene Modul darf abgeschlossen werden.
+    if (caller.ForbidUnlessSelf(module.LearningPath.UserId) is { } denied) return denied;
 
     // XP nur beim Übergang auf "erledigt".
     if (!module.IsCompleted)
@@ -444,7 +520,7 @@ app.MapPost("/api/modules/{moduleId}/complete", async (Guid moduleId, AppDbConte
 });
 
 // Generate Quiz
-app.MapPost("/api/quiz/generate", async (QuizRequest request) =>
+api.MapPost("/quiz/generate", async (QuizRequest request) =>
 {
     using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
     try
@@ -497,8 +573,11 @@ app.MapPost("/api/quiz/generate", async (QuizRequest request) =>
 });
 
 // Complete Quiz: vergibt XP für richtige Antworten
-app.MapPost("/api/quiz/complete", async (QuizCompleteRequest request, AppDbContext db) =>
+api.MapPost("/quiz/complete", async (QuizCompleteRequest request, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.GetUserId() is not { } callerId) return Results.Unauthorized();
+    request = request with { UserId = callerId };
+
     if (request.Total < 1 || request.Total > 10 || request.Correct < 0 || request.Correct > request.Total)
         return Results.BadRequest("Ungültiges Quiz-Ergebnis");
 
@@ -515,8 +594,10 @@ app.MapPost("/api/quiz/complete", async (QuizCompleteRequest request, AppDbConte
 });
 
 // Get Project Suggestions
-app.MapGet("/api/projects/suggestions/{userId}", async (Guid userId, AppDbContext db) =>
+api.MapGet("/projects/suggestions/{userId}", async (Guid userId, ClaimsPrincipal caller, AppDbContext db) =>
 {
+    if (caller.ForbidUnlessSelf(userId) is { } denied) return denied;
+
     var profile = await db.SkillProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
     int avgLevel = profile != null ? (profile.DotNetLevel + profile.AngularLevel + profile.ArchitectureLevel) / 3 : 3;
 
