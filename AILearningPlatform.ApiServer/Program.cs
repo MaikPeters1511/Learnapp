@@ -287,6 +287,14 @@ app.MapPost("/api/challenges/{challengeId}/submit", async (Guid challengeId, Sub
     var challenge = await db.Challenges.FindAsync(challengeId);
     if (challenge == null) return Results.NotFound("Challenge not found");
 
+    // XP nur für die erste Abgabe pro Aufgabe, damit wiederholtes Einreichen nicht farmbar ist.
+    var isFirstSubmission = !await db.Submissions
+        .AnyAsync(s => s.ChallengeId == challengeId && s.UserId == request.UserId);
+    if (isFirstSubmission)
+    {
+        Xp.Award(await db.Users.FindAsync(request.UserId), Xp.SubmitCode);
+    }
+
     var submission = new Submission
     {
         ChallengeId = challengeId,
@@ -315,9 +323,14 @@ app.MapGet("/api/challenges/{challengeId}/submissions/{userId}", async (Guid cha
 // Mark Module Complete
 app.MapPost("/api/modules/{moduleId}/complete", async (Guid moduleId, AppDbContext db) =>
 {
-    var module = await db.CourseModules.FindAsync(moduleId);
+    var module = await db.CourseModules.Include(m => m.LearningPath).FirstOrDefaultAsync(m => m.Id == moduleId);
     if (module == null) return Results.NotFound("Module not found");
 
+    // XP nur beim Übergang auf "erledigt".
+    if (!module.IsCompleted)
+    {
+        Xp.Award(await db.Users.FindAsync(module.LearningPath.UserId), Xp.CompleteModule);
+    }
     module.IsCompleted = true;
     await db.SaveChangesAsync();
     return Results.Ok(module);
@@ -376,6 +389,23 @@ app.MapPost("/api/quiz/generate", async (QuizRequest request) =>
     return Results.Json(fallbackQuiz);
 });
 
+// Complete Quiz: vergibt XP für richtige Antworten
+app.MapPost("/api/quiz/complete", async (QuizCompleteRequest request, AppDbContext db) =>
+{
+    if (request.Total < 1 || request.Total > 10 || request.Correct < 0 || request.Correct > request.Total)
+        return Results.BadRequest("Ungültiges Quiz-Ergebnis");
+
+    var user = await db.Users.FindAsync(request.UserId);
+    if (user == null) return Results.NotFound("User not found");
+
+    var xpGained = request.Correct * Xp.QuizCorrectAnswer
+        + (request.Correct == request.Total ? Xp.QuizPerfectBonus : 0);
+    Xp.Award(user, xpGained);
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { xpGained, points = user.Points });
+});
+
 // Get Project Suggestions
 app.MapGet("/api/projects/suggestions/{userId}", async (Guid userId, AppDbContext db) =>
 {
@@ -423,3 +453,21 @@ app.Run();
 public record AssessmentRequest(Guid UserId, int DotNetLevel, int AngularLevel, int ArchitectureLevel, int TestingLevel, int CloudLevel);
 public record SubmissionRequest(Guid UserId, string Code);
 public record QuizRequest(string Topic, int Level);
+public record QuizCompleteRequest(Guid UserId, int Correct, int Total);
+
+// XP-Regeln der Lernplattform
+public static class Xp
+{
+    public const int SubmitCode = 5;          // erste Abgabe pro Aufgabe
+    public const int ApproveChallenge = 50;   // erste genehmigte Abgabe pro Aufgabe (vergibt der EvaluationWorker)
+    public const int CompleteModule = 25;
+    public const int QuizCorrectAnswer = 10;
+    public const int QuizPerfectBonus = 20;
+
+    public static void Award(User? user, int xp)
+    {
+        if (user == null || xp <= 0) return;
+        user.Points += xp;
+        user.LastActivityDate = DateTime.UtcNow;
+    }
+}

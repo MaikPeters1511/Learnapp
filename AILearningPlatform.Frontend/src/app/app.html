@@ -215,9 +215,17 @@
                     </h1>
                     <p class="text-sm opacity-60 mt-1 max-w-xl">{{ learningPath().description }}</p>
                   </div>
-                  <div class="bg-base-200 border border-base-300 rounded-2xl px-4 py-3 text-center min-w-[120px] shadow-sm">
-                    <span class="text-xs uppercase font-bold opacity-50 block">Status</span>
-                    <span class="text-lg font-black text-primary">In Progress</span>
+                  <div class="flex flex-wrap gap-3">
+                    <div class="bg-base-200 border border-base-300 rounded-2xl px-4 py-3 text-center min-w-[140px] shadow-sm">
+                      <span class="text-xs uppercase font-bold opacity-50 block">Level {{ level() }}</span>
+                      <span class="text-lg font-black text-accent">{{ xp() }} XP</span>
+                      <progress class="progress progress-accent w-full h-1.5 mt-1" [value]="xpIntoLevel()" [max]="xpPerLevel"></progress>
+                      <span class="text-[10px] opacity-50 block mt-0.5">{{ xpPerLevel - xpIntoLevel() }} XP bis Level {{ level() + 1 }}</span>
+                    </div>
+                    <div class="bg-base-200 border border-base-300 rounded-2xl px-4 py-3 text-center min-w-[120px] shadow-sm">
+                      <span class="text-xs uppercase font-bold opacity-50 block">Status</span>
+                      <span class="text-lg font-black text-primary">{{ progressPercent() === 100 ? 'Abgeschlossen' : 'In Progress' }}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -225,11 +233,11 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-base-200/50">
                   <div>
                     <span class="text-xs opacity-50 block">Absolvierte Module</span>
-                    <span class="text-xl font-bold">1 / 5</span>
+                    <span class="text-xl font-bold">{{ completedModules() }} / {{ totalModules() }}</span>
                   </div>
                   <div>
                     <span class="text-xs opacity-50 block">Gesamte Aufgaben</span>
-                    <span class="text-xl font-bold text-secondary">5</span>
+                    <span class="text-xl font-bold text-secondary">{{ totalChallenges() }}</span>
                   </div>
                   <div>
                     <span class="text-xs opacity-50 block">Genommene Quizzes</span>
@@ -238,8 +246,8 @@
                   <div class="col-span-2 md:col-span-1">
                     <span class="text-xs opacity-50 block">Lernfortschritt</span>
                     <div class="flex items-center gap-2 mt-1">
-                      <progress class="progress progress-primary w-24 h-2" value="20" max="100"></progress>
-                      <span class="text-xs font-bold text-primary">20%</span>
+                      <progress class="progress progress-primary w-24 h-2" [value]="progressPercent()" max="100"></progress>
+                      <span class="text-xs font-bold text-primary">{{ progressPercent() }}%</span>
                     </div>
                   </div>
                 </div>
@@ -663,5 +671,12 @@
       <p class="text-[10px] opacity-60 mt-1">Ausgeführt unter .NET 10, .NET Aspire und Angular v22</p>
     </aside>
   </footer>
+
+  <!-- XP-Hinweis -->
+  @if (xpToast()) {
+    <div class="toast toast-end toast-bottom z-50">
+      <div class="alert alert-success shadow-lg font-bold">✨ {{ xpToast() }}</div>
+    </div>
+  }
 
 </div>

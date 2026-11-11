@@ -14,6 +14,9 @@ public class Worker : BackgroundService
     private readonly string _lmStudioUrl;
     private readonly string _lmStudioModel;
 
+    // Muss zu Xp.ApproveChallenge im ApiServer passen.
+    private const int ApproveChallengeXp = 50;
+
     public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
         _logger = logger;
@@ -58,6 +61,7 @@ public class Worker : BackgroundService
 
                     string feedback = string.Empty;
                     string status = "Approved";
+                    bool feedbackIsFromAi = false;
 
                     try
                     {
@@ -91,6 +95,7 @@ End your response with either [APPROVED] or [REJECTED] on a new line.";
                             var content = resultJson.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? string.Empty;
                             
                             feedback = content;
+                            feedbackIsFromAi = true;
                             if (content.Contains("[REJECTED]", StringComparison.OrdinalIgnoreCase))
                             {
                                 status = "Rejected";
@@ -110,6 +115,27 @@ End your response with either [APPROVED] or [REJECTED] on a new line.";
 
                     submission.Feedback = feedback;
                     submission.Status = status;
+
+                    // XP nur für die erste genehmigte Abgabe pro Aufgabe und nur bei echter Bewertung,
+                    // nicht beim automatischen Fallback ohne KI-Antwort.
+                    if (status == "Approved" && feedbackIsFromAi)
+                    {
+                        var alreadyApproved = await db.Submissions.AnyAsync(s =>
+                            s.UserId == submission.UserId &&
+                            s.ChallengeId == submission.ChallengeId &&
+                            s.Status == "Approved" &&
+                            s.Id != submission.Id, stoppingToken);
+                        if (!alreadyApproved)
+                        {
+                            var user = await db.Users.FindAsync(new object[] { submission.UserId }, stoppingToken);
+                            if (user != null)
+                            {
+                                user.Points += ApproveChallengeXp;
+                                user.LastActivityDate = DateTime.UtcNow;
+                            }
+                        }
+                    }
+
                     await db.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation("Submission {SubmissionId} marked as {Status}", submission.Id, status);
                 }
