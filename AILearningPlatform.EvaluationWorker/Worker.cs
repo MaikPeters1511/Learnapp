@@ -33,6 +33,7 @@ public class Worker : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             db.Database.EnsureCreated();
+            SchemaUpgrades.Apply(db);
         }
         catch (Exception ex)
         {

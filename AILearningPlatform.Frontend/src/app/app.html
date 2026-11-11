@@ -631,7 +631,7 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-4 mt-6">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                 <div class="card bg-base-100 border border-base-200/50 shadow-md">
                   <div class="card-body items-center text-center p-4">
                     <div class="text-2xl font-black">{{ user.stats.completedModules }} / {{ user.stats.totalModules }}</div>
@@ -648,6 +648,12 @@
                   <div class="card-body items-center text-center p-4">
                     <div class="text-2xl font-black">{{ user.stats.submissions }}</div>
                     <p class="text-xs opacity-60">Abgaben</p>
+                  </div>
+                </div>
+                <div class="card bg-base-100 border border-base-200/50 shadow-md">
+                  <div class="card-body items-center text-center p-4">
+                    <div class="text-2xl font-black">{{ user.stats.quizzesCompleted }}</div>
+                    <p class="text-xs opacity-60">Quizze beendet</p>
                   </div>
                 </div>
               </div>
