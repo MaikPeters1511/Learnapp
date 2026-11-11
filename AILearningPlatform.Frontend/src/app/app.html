@@ -603,8 +603,34 @@
         @if (userProfile(); as user) {
           <div class="animate-fade-in max-w-4xl mx-auto">
             <header class="text-center mb-10">
-              <h1 class="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{{ user.name }}</h1>
-              <p class="text-lg opacity-60">{{ user.email }}</p>
+              @if (editingProfile()) {
+                <form class="max-w-md mx-auto space-y-3 text-left" (ngSubmit)="saveProfile()">
+                  <label class="form-control w-full">
+                    <span class="label-text text-xs font-bold opacity-70 mb-1 block">Name</span>
+                    <input type="text" name="name" class="input input-bordered w-full" maxlength="50" required
+                           [ngModel]="editName()" (ngModelChange)="editName.set($event)" />
+                  </label>
+                  <label class="form-control w-full">
+                    <span class="label-text text-xs font-bold opacity-70 mb-1 block">E-Mail</span>
+                    <input type="email" name="email" class="input input-bordered w-full" maxlength="254" required
+                           [ngModel]="editEmail()" (ngModelChange)="editEmail.set($event)" />
+                  </label>
+                  @if (profileError()) {
+                    <div class="alert alert-error text-sm py-2">{{ profileError() }}</div>
+                  }
+                  <div class="flex gap-2 justify-center pt-1">
+                    <button type="submit" class="btn btn-primary btn-sm" [disabled]="profileSaving()">
+                      @if (profileSaving()) { <span class="loading loading-spinner loading-xs"></span> }
+                      Speichern
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" (click)="cancelEditProfile()" [disabled]="profileSaving()">Abbrechen</button>
+                  </div>
+                </form>
+              } @else {
+                <h1 class="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{{ user.name }}</h1>
+                <p class="text-lg opacity-60">{{ user.email }}</p>
+                <button type="button" class="btn btn-outline btn-sm mt-4" (click)="startEditProfile()">✏️ Profil bearbeiten</button>
+              }
             </header>
 
             <!-- Stats Section -->

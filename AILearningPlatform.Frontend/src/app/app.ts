@@ -91,6 +91,46 @@ export class App implements OnInit {
     });
   }
 
+  // Profil bearbeiten (Name und E-Mail)
+  editingProfile = signal<boolean>(false);
+  profileSaving = signal<boolean>(false);
+  profileError = signal<string>('');
+  editName = signal<string>('');
+  editEmail = signal<string>('');
+
+  startEditProfile() {
+    const p = this.userProfile();
+    if (!p) return;
+    this.editName.set(p.name ?? '');
+    this.editEmail.set(p.email ?? '');
+    this.profileError.set('');
+    this.editingProfile.set(true);
+  }
+
+  cancelEditProfile() {
+    this.editingProfile.set(false);
+    this.profileError.set('');
+  }
+
+  saveProfile() {
+    this.profileSaving.set(true);
+    this.profileError.set('');
+    this.http.put<any>(`${environment.apiUrl}/api/users/${this.userId}/profile`, {
+      name: this.editName(),
+      email: this.editEmail()
+    }).subscribe({
+      next: (res) => {
+        this.userProfile.update(p => ({ ...p, name: res.name, email: res.email }));
+        this.editingProfile.set(false);
+        this.profileSaving.set(false);
+      },
+      error: (err) => {
+        this.profileError.set(err?.error?.error ?? 'Speichern fehlgeschlagen. Bitte versuche es erneut.');
+        this.profileSaving.set(false);
+      }
+    });
+  }
+
   checkExistingPath() {
     this.loading.set(true);
     this.http.get(`${environment.apiUrl}/api/learningpath/${this.userId}`).subscribe({

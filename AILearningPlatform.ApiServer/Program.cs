@@ -116,6 +116,28 @@ app.MapGet("/api/users/{id}", async (Guid id, AppDbContext db) =>
     return Results.Ok(user);
 });
 
+// Name und E-Mail im Profil ändern.
+app.MapPut("/api/users/{id}/profile", async (Guid id, UpdateProfileRequest request, AppDbContext db) =>
+{
+    var name = (request.Name ?? string.Empty).Trim();
+    var email = (request.Email ?? string.Empty).Trim();
+
+    if (name.Length < 1 || name.Length > 50)
+        return Results.BadRequest(new { error = "Der Name muss zwischen 1 und 50 Zeichen lang sein." });
+
+    if (email.Length > 254 || !System.Net.Mail.MailAddress.TryCreate(email, out var parsed) || parsed.Address != email)
+        return Results.BadRequest(new { error = "Bitte gib eine gültige E-Mail-Adresse ein." });
+
+    var user = await db.Users.FindAsync(id);
+    if (user == null) return Results.NotFound("User not found");
+
+    user.Name = name;
+    user.Email = email;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { user.Id, user.Name, user.Email });
+});
+
 // Profil mit echten Daten: Stammdaten, XP/Level, Streak, Einstufung, Statistik und Abzeichen.
 // Abzeichen werden aus den vorhandenen Daten abgeleitet (keine eigene Tabelle nötig).
 app.MapGet("/api/users/{id}/profile", async (Guid id, AppDbContext db) =>
@@ -525,3 +547,4 @@ public record AssessmentRequest(Guid UserId, int DotNetLevel, int AngularLevel, 
 public record SubmissionRequest(Guid UserId, string Code);
 public record QuizRequest(string Topic, int Level);
 public record QuizCompleteRequest(Guid UserId, int Correct, int Total);
+public record UpdateProfileRequest(string? Name, string? Email);
