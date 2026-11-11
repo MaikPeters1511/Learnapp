@@ -131,6 +131,12 @@ app.MapPut("/api/users/{id}/profile", async (Guid id, UpdateProfileRequest reque
     var user = await db.Users.FindAsync(id);
     if (user == null) return Results.NotFound("User not found");
 
+    // E-Mail muss eindeutig sein (ohne Beachtung der Groß-/Kleinschreibung); der eigene Eintrag zählt nicht.
+    var emailLower = email.ToLowerInvariant();
+    var emailTaken = await db.Users.AnyAsync(u => u.Id != id && u.Email.ToLower() == emailLower);
+    if (emailTaken)
+        return Results.Conflict(new { error = "Diese E-Mail-Adresse wird bereits verwendet." });
+
     user.Name = name;
     user.Email = email;
     await db.SaveChangesAsync();
