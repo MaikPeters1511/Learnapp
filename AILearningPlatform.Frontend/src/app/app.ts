@@ -29,8 +29,8 @@ export class App implements OnInit {
   cloudLevel = signal<number>(1);
   assessmentStep = signal<number>(1);
 
-  // Anzahl abgeschlossener Quizze, pro Browser in localStorage gespeichert.
-  quizzesTaken = signal<number>(this.readQuizzesTaken());
+  // Anzahl abgeschlossener Quizze, serverseitig gespeichert.
+  quizzesTaken = signal<number>(0);
 
   // Learning Path Data
   learningPath = signal<any>(null);
@@ -135,6 +135,7 @@ export class App implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/api/users/${this.userId}`).subscribe({
       next: (user) => {
         this.xp.set(user?.points ?? 0);
+        this.quizzesTaken.set(user?.quizzesCompleted ?? 0);
         const p = user?.skillProfile;
         if (!p) return;
         this.dotnetLevel.set(p.dotNetLevel ?? 1);
@@ -209,31 +210,20 @@ export class App implements OnInit {
       this.quizSubmitted.set(false);
     } else {
       // Completed, redirect to dashboard
-      this.quizzesTaken.update(n => n + 1);
-      try {
-        localStorage.setItem('quizzesTaken', String(this.quizzesTaken()));
-      } catch { /* localStorage nicht verfügbar */ }
-
-      // XP für das Quiz vergeben lassen
+      // Quiz-Ergebnis melden: das Backend vergibt XP und zählt das Quiz.
       const before = this.xp();
       this.http.post<any>(`${environment.apiUrl}/api/quiz/complete`, {
         userId: this.userId,
         correct: this.quizScore(),
         total: this.quizQuestions().length
       }).subscribe({
-        next: (res) => this.applyXp(res.points, before)
+        next: (res) => {
+          this.applyXp(res.points, before);
+          this.quizzesTaken.set(res.quizzesCompleted ?? this.quizzesTaken());
+        }
       });
 
       this.currentView.set('dashboard');
-    }
-  }
-
-  private readQuizzesTaken(): number {
-    try {
-      const n = Number(localStorage.getItem('quizzesTaken'));
-      return Number.isFinite(n) && n > 0 ? n : 0;
-    } catch {
-      return 0;
     }
   }
 

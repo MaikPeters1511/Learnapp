@@ -58,6 +58,7 @@ using (var scope = app.Services.CreateScope())
         try
         {
             db.Database.EnsureCreated();
+            SchemaUpgrades.Apply(db);
             break;
         }
         catch (Exception ex) when (attempt < maxAttempts)
@@ -170,7 +171,15 @@ app.MapGet("/api/users/{id}/profile", async (Guid id, AppDbContext db) =>
             testingLevel = user.SkillProfile.TestingLevel,
             cloudLevel = user.SkillProfile.CloudLevel
         },
-        stats = new { totalModules, completedModules, totalChallenges, approvedChallenges, submissions = submissions.Count },
+        stats = new
+        {
+            totalModules,
+            completedModules,
+            totalChallenges,
+            approvedChallenges,
+            submissions = submissions.Count,
+            quizzesCompleted = user.QuizzesCompleted
+        },
         badges
     });
 });
@@ -462,9 +471,10 @@ app.MapPost("/api/quiz/complete", async (QuizCompleteRequest request, AppDbConte
     var xpGained = request.Correct * Xp.QuizCorrectAnswer
         + (request.Correct == request.Total ? Xp.QuizPerfectBonus : 0);
     Xp.Award(user, xpGained);
+    user.QuizzesCompleted++;
     await db.SaveChangesAsync();
 
-    return Results.Ok(new { xpGained, points = user.Points });
+    return Results.Ok(new { xpGained, points = user.Points, quizzesCompleted = user.QuizzesCompleted });
 });
 
 // Get Project Suggestions

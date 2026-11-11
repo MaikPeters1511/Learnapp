@@ -10,6 +10,7 @@ public class User
     public int Points { get; set; }
     public int CurrentStreak { get; set; }
     public DateTime LastActivityDate { get; set; }
+    public int QuizzesCompleted { get; set; }
     
     public ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
 
