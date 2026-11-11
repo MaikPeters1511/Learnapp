@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -37,6 +37,26 @@ export class App implements OnInit {
 
   // Learning Path Data
   learningPath = signal<any>(null);
+
+  // Abgeleitete Dashboard-Werte (statt fest eingetragener Zahlen)
+  totalModules = computed(() => this.learningPath()?.modules?.length ?? 0);
+  completedModules = computed(
+    () => (this.learningPath()?.modules ?? []).filter((m: any) => m.isCompleted).length
+  );
+  totalChallenges = computed(
+    () => (this.learningPath()?.modules ?? []).reduce((sum: number, m: any) => sum + (m.challenges?.length ?? 0), 0)
+  );
+  progressPercent = computed(() =>
+    this.totalModules() === 0 ? 0 : Math.round((this.completedModules() / this.totalModules()) * 100)
+  );
+
+  // XP und Level (alle 100 XP ein Level)
+  readonly xpPerLevel = 100;
+  xp = signal<number>(0);
+  xpToast = signal<string>('');
+  level = computed(() => Math.floor(this.xp() / this.xpPerLevel) + 1);
+  xpIntoLevel = computed(() => this.xp() % this.xpPerLevel);
+  private xpToastTimer: ReturnType<typeof setTimeout> | undefined;
   selectedChallenge = signal<any>(null);
   
   // Project Suggestions State
@@ -115,6 +135,7 @@ export class App implements OnInit {
   loadSkillProfile() {
     this.http.get<any>(`${environment.apiUrl}/api/users/${this.userId}`).subscribe({
       next: (user) => {
+        this.xp.set(user?.points ?? 0);
         const p = user?.skillProfile;
         if (!p) return;
         this.dotnetLevel.set(p.dotNetLevel ?? 1);
@@ -124,6 +145,24 @@ export class App implements OnInit {
         this.cloudLevel.set(p.cloudLevel ?? 1);
       }
     });
+  }
+
+  // Holt den XP-Stand vom Backend und zeigt einen Hinweis, wenn XP dazugekommen sind.
+  refreshXp() {
+    const before = this.xp();
+    this.http.get<any>(`${environment.apiUrl}/api/users/${this.userId}`).subscribe({
+      next: (user) => this.applyXp(user?.points ?? 0, before)
+    });
+  }
+
+  private applyXp(points: number, before: number) {
+    this.xp.set(points);
+    const gained = points - before;
+    if (gained > 0) {
+      this.xpToast.set(`+${gained} XP`);
+      clearTimeout(this.xpToastTimer);
+      this.xpToastTimer = setTimeout(() => this.xpToast.set(''), 4000);
+    }
   }
 
   loadProjectSuggestions() {
@@ -175,6 +214,17 @@ export class App implements OnInit {
       try {
         localStorage.setItem('quizzesTaken', String(this.quizzesTaken()));
       } catch { /* localStorage nicht verfügbar */ }
+
+      // XP für das Quiz vergeben lassen
+      const before = this.xp();
+      this.http.post<any>(`${environment.apiUrl}/api/quiz/complete`, {
+        userId: this.userId,
+        correct: this.quizScore(),
+        total: this.quizQuestions().length
+      }).subscribe({
+        next: (res) => this.applyXp(res.points, before)
+      });
+
       this.currentView.set('dashboard');
     }
   }
@@ -228,8 +278,9 @@ export class App implements OnInit {
             this.submissionFeedback.set(latest.feedback);
             this.isSubmitting.set(false);
             clearInterval(interval);
-            
+
             this.reloadLearningPath();
+            this.refreshXp();
           }
         },
         error: (err) => {
@@ -251,6 +302,7 @@ export class App implements OnInit {
     this.http.post(`${environment.apiUrl}/api/modules/${module.id}/complete`, {}).subscribe({
       next: () => {
         this.reloadLearningPath();
+        this.refreshXp();
       }
     });
   }
