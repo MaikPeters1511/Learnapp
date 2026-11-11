@@ -1,4 +1,5 @@
 using AILearningPlatform.Data;
+using AILearningPlatform.Data.Gamification;
 using AILearningPlatform.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -112,6 +113,66 @@ app.MapGet("/api/users/{id}", async (Guid id, AppDbContext db) =>
         await db.SaveChangesAsync();
     }
     return Results.Ok(user);
+});
+
+// Profil mit echten Daten: Stammdaten, XP/Level, Streak, Einstufung, Statistik und Abzeichen.
+// Abzeichen werden aus den vorhandenen Daten abgeleitet (keine eigene Tabelle nötig).
+app.MapGet("/api/users/{id}/profile", async (Guid id, AppDbContext db) =>
+{
+    var user = await db.Users.Include(u => u.SkillProfile).FirstOrDefaultAsync(u => u.Id == id);
+    if (user == null) return Results.NotFound("User not found");
+
+    var modules = await db.LearningPaths
+        .Where(p => p.UserId == id)
+        .SelectMany(p => p.Modules)
+        .Select(m => new { m.IsCompleted, ChallengeCount = m.Challenges.Count })
+        .ToListAsync();
+
+    var submissions = await db.Submissions
+        .Where(s => s.UserId == id)
+        .Select(s => new { s.ChallengeId, s.Status, s.SubmittedAt })
+        .ToListAsync();
+
+    var totalModules = modules.Count;
+    var completedModules = modules.Count(m => m.IsCompleted);
+    var totalChallenges = modules.Sum(m => m.ChallengeCount);
+    var approved = submissions.Where(s => s.Status == "Approved").ToList();
+    var approvedChallenges = approved.Select(s => s.ChallengeId).Distinct().Count();
+    var firstSubmission = submissions.Count > 0 ? submissions.Min(s => s.SubmittedAt) : (DateTime?)null;
+    var firstApproved = approved.Count > 0 ? approved.Min(s => s.SubmittedAt) : (DateTime?)null;
+
+    var level = Xp.LevelFor(user.Points);
+    var badges = new[]
+    {
+        new { key = "first-step", name = "Erster Schritt", description = "Du hast deine erste Lösung eingereicht.", icon = "👟", earned = submissions.Count > 0, awardedAt = firstSubmission },
+        new { key = "approved", name = "Bestanden!", description = "Eine deiner Lösungen wurde von der KI genehmigt.", icon = "✅", earned = approved.Count > 0, awardedAt = firstApproved },
+        new { key = "module-master", name = "Modul-Meister", description = "Du hast ein komplettes Modul abgeschlossen.", icon = "🏁", earned = completedModules > 0, awardedAt = (DateTime?)null },
+        new { key = "streak-3", name = "Dranbleiber", description = "Mindestens 3 Tage in Folge gelernt.", icon = "🔥", earned = user.CurrentStreak >= 3, awardedAt = (DateTime?)null },
+        new { key = "level-5", name = "Fortgeschritten", description = "Level 5 erreicht.", icon = "🚀", earned = level >= 5, awardedAt = (DateTime?)null },
+    };
+
+    return Results.Ok(new
+    {
+        user.Id,
+        user.Name,
+        user.Email,
+        points = user.Points,
+        level,
+        xpIntoLevel = user.Points % Xp.XpPerLevel,
+        xpPerLevel = Xp.XpPerLevel,
+        currentStreak = user.CurrentStreak,
+        lastActivityDate = user.LastActivityDate,
+        skillProfile = user.SkillProfile == null ? null : new
+        {
+            dotNetLevel = user.SkillProfile.DotNetLevel,
+            angularLevel = user.SkillProfile.AngularLevel,
+            architectureLevel = user.SkillProfile.ArchitectureLevel,
+            testingLevel = user.SkillProfile.TestingLevel,
+            cloudLevel = user.SkillProfile.CloudLevel
+        },
+        stats = new { totalModules, completedModules, totalChallenges, approvedChallenges, submissions = submissions.Count },
+        badges
+    });
 });
 
 // Submit Skill Assessment
@@ -454,20 +515,3 @@ public record AssessmentRequest(Guid UserId, int DotNetLevel, int AngularLevel, 
 public record SubmissionRequest(Guid UserId, string Code);
 public record QuizRequest(string Topic, int Level);
 public record QuizCompleteRequest(Guid UserId, int Correct, int Total);
-
-// XP-Regeln der Lernplattform
-public static class Xp
-{
-    public const int SubmitCode = 5;          // erste Abgabe pro Aufgabe
-    public const int ApproveChallenge = 50;   // erste genehmigte Abgabe pro Aufgabe (vergibt der EvaluationWorker)
-    public const int CompleteModule = 25;
-    public const int QuizCorrectAnswer = 10;
-    public const int QuizPerfectBonus = 20;
-
-    public static void Award(User? user, int xp)
-    {
-        if (user == null || xp <= 0) return;
-        user.Points += xp;
-        user.LastActivityDate = DateTime.UtcNow;
-    }
-}

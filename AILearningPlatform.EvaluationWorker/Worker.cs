@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using AILearningPlatform.Data;
+using AILearningPlatform.Data.Gamification;
 using AILearningPlatform.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,9 +14,6 @@ public class Worker : BackgroundService
     private readonly HttpClient _httpClient;
     private readonly string _lmStudioUrl;
     private readonly string _lmStudioModel;
-
-    // Muss zu Xp.ApproveChallenge im ApiServer passen.
-    private const int ApproveChallengeXp = 50;
 
     public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
@@ -128,11 +126,7 @@ End your response with either [APPROVED] or [REJECTED] on a new line.";
                         if (!alreadyApproved)
                         {
                             var user = await db.Users.FindAsync(new object[] { submission.UserId }, stoppingToken);
-                            if (user != null)
-                            {
-                                user.Points += ApproveChallengeXp;
-                                user.LastActivityDate = DateTime.UtcNow;
-                            }
+                            Xp.Award(user, Xp.ApproveChallenge);
                         }
                     }
 

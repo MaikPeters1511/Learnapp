@@ -603,7 +603,7 @@
         @if (userProfile(); as user) {
           <div class="animate-fade-in max-w-4xl mx-auto">
             <header class="text-center mb-10">
-              <h1 class="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{{ user.name }}'s Profile</h1>
+              <h1 class="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">{{ user.name }}</h1>
               <p class="text-lg opacity-60">{{ user.email }}</p>
             </header>
 
@@ -614,44 +614,91 @@
                 <div class="card bg-base-100 border border-base-200/50 shadow-lg">
                   <div class="card-body items-center text-center">
                     <div class="text-6xl font-black text-primary">{{ user.points | number }}</div>
-                    <h3 class="card-title text-base-content/70 mt-2">Punkte</h3>
-                    <div class="text-primary text-3xl mt-2">⭐</div>
+                    <h3 class="card-title text-base-content/70 mt-2">XP · Level {{ user.level }}</h3>
+                    <progress class="progress progress-primary w-full h-2 mt-2" [value]="user.xpIntoLevel" [max]="user.xpPerLevel"></progress>
+                    <p class="text-xs opacity-60">{{ user.xpPerLevel - user.xpIntoLevel }} XP bis Level {{ user.level + 1 }}</p>
                   </div>
                 </div>
                 <div class="card bg-base-100 border border-base-200/50 shadow-lg">
                   <div class="card-body items-center text-center">
                     <div class="text-6xl font-black text-secondary">{{ user.currentStreak }}</div>
-                    <h3 class="card-title text-base-content/70 mt-2">Tage Lern-Streak</h3>
+                    <h3 class="card-title text-base-content/70 mt-2">{{ user.currentStreak === 1 ? 'Tag Lern-Streak' : 'Tage Lern-Streak' }}</h3>
                     <div class="text-secondary text-3xl mt-2">🔥</div>
+                    @if (user.lastActivityDate) {
+                      <p class="text-xs opacity-60">Zuletzt aktiv: {{ user.lastActivityDate | date:'short' }}</p>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-4 mt-6">
+                <div class="card bg-base-100 border border-base-200/50 shadow-md">
+                  <div class="card-body items-center text-center p-4">
+                    <div class="text-2xl font-black">{{ user.stats.completedModules }} / {{ user.stats.totalModules }}</div>
+                    <p class="text-xs opacity-60">Module abgeschlossen</p>
+                  </div>
+                </div>
+                <div class="card bg-base-100 border border-base-200/50 shadow-md">
+                  <div class="card-body items-center text-center p-4">
+                    <div class="text-2xl font-black">{{ user.stats.approvedChallenges }} / {{ user.stats.totalChallenges }}</div>
+                    <p class="text-xs opacity-60">Aufgaben genehmigt</p>
+                  </div>
+                </div>
+                <div class="card bg-base-100 border border-base-200/50 shadow-md">
+                  <div class="card-body items-center text-center p-4">
+                    <div class="text-2xl font-black">{{ user.stats.submissions }}</div>
+                    <p class="text-xs opacity-60">Abgaben</p>
                   </div>
                 </div>
               </div>
             </section>
 
+            <!-- Skill Profile -->
+            @if (user.skillProfile; as sp) {
+              <section class="mb-12">
+                <h2 class="text-xl font-extrabold tracking-tight border-l-4 border-secondary pl-3 mb-6">Deine Einstufung</h2>
+                <div class="card bg-base-100 border border-base-200/50 shadow-md">
+                  <div class="card-body space-y-3">
+                    @for (skill of [
+                      { name: '.NET & C#', value: sp.dotNetLevel, cls: 'progress-primary' },
+                      { name: 'Angular', value: sp.angularLevel, cls: 'progress-secondary' },
+                      { name: 'Architektur', value: sp.architectureLevel, cls: 'progress-accent' },
+                      { name: 'Testing', value: sp.testingLevel, cls: 'progress-info' },
+                      { name: 'Cloud & DevOps', value: sp.cloudLevel, cls: 'progress-warning' }
+                    ]; track skill.name) {
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                          <span>{{ skill.name }}</span>
+                          <span>{{ skill.value }}/10</span>
+                        </div>
+                        <progress class="progress w-full h-1.5" [ngClass]="skill.cls" [value]="skill.value * 10" max="100"></progress>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </section>
+            }
+
             <!-- Achievements Section -->
             <section>
               <h2 class="text-xl font-extrabold tracking-tight border-l-4 border-accent pl-3 mb-6">Deine Abzeichen</h2>
-              @if (user.userAchievements.length > 0) {
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  @for(ua of user.userAchievements; track ua.id) {
-                    <div class="card bg-base-100 border border-base-200/50 shadow-md flex-row items-center p-4 gap-4 hover:border-accent/50 transition-all">
-                      <div class="text-4xl text-accent p-2 bg-accent/10 rounded-full">
-                        <!-- Note: Requires a library like 'angular-fontawesome' or manual icon handling -->
-                         <i [class]="'fa-solid ' + ua.achievement.iconName"></i>
-                      </div>
-                      <div class="flex-1">
-                        <h3 class="font-bold text-base">{{ ua.achievement.name }}</h3>
-                        <p class="text-xs opacity-70">{{ ua.achievement.description }}</p>
-                        <p class="text-[10px] font-mono opacity-50 mt-1">Erhalten am: {{ ua.awardedAt | date:'short' }}</p>
-                      </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (badge of user.badges; track badge.key) {
+                  <div class="card bg-base-100 border shadow-md flex-row items-center p-4 gap-4 transition-all"
+                       [class.border-accent]="badge.earned" [class.border-base-200]="!badge.earned" [class.opacity-40]="!badge.earned">
+                    <div class="text-4xl p-2 bg-accent/10 rounded-full" [class.grayscale]="!badge.earned">{{ badge.icon }}</div>
+                    <div class="flex-1">
+                      <h3 class="font-bold text-base">{{ badge.name }}</h3>
+                      <p class="text-xs opacity-70">{{ badge.description }}</p>
+                      @if (badge.earned && badge.awardedAt) {
+                        <p class="text-[10px] font-mono opacity-50 mt-1">Erhalten am: {{ badge.awardedAt | date:'short' }}</p>
+                      } @else if (!badge.earned) {
+                        <p class="text-[10px] opacity-50 mt-1">Noch gesperrt</p>
+                      }
                     </div>
-                  }
-                </div>
-              } @else {
-                <div class="text-center py-10 px-4 bg-base-100/50 rounded-lg border border-dashed border-base-content/20">
-                  <p class="opacity-60">Noch keine Abzeichen verdient. Schließe Herausforderungen ab, um sie zu sammeln!</p>
-                </div>
-              }
+                  </div>
+                }
+              </div>
             </section>
           </div>
         } @else {
