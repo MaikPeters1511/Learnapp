@@ -32,6 +32,9 @@ export class App implements OnInit {
   cloudLevel = signal<number>(1);
   assessmentStep = signal<number>(1);
 
+  // Anzahl abgeschlossener Quizze, pro Browser in localStorage gespeichert.
+  quizzesTaken = signal<number>(this.readQuizzesTaken());
+
   // Learning Path Data
   learningPath = signal<any>(null);
   selectedChallenge = signal<any>(null);
@@ -168,7 +171,20 @@ export class App implements OnInit {
       this.quizSubmitted.set(false);
     } else {
       // Completed, redirect to dashboard
+      this.quizzesTaken.update(n => n + 1);
+      try {
+        localStorage.setItem('quizzesTaken', String(this.quizzesTaken()));
+      } catch { /* localStorage nicht verfügbar */ }
       this.currentView.set('dashboard');
+    }
+  }
+
+  private readQuizzesTaken(): number {
+    try {
+      const n = Number(localStorage.getItem('quizzesTaken'));
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch {
+      return 0;
     }
   }
 
