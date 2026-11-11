@@ -1,3 +1,6 @@
+@if (!auth.isLoggedIn()) {
+  <app-auth-page (authenticated)="onAuthenticated()" />
+} @else {
 <div data-theme="night" class="min-h-screen bg-gradient-to-br from-base-300 via-base-200 to-base-300 text-base-content font-sans antialiased selection:bg-primary selection:text-primary-content">
   
   <!-- Navbar -->
@@ -20,13 +23,13 @@
       <div class="dropdown dropdown-end">
         <label tabindex="0" class="btn btn-ghost btn-circle avatar border border-base-content/10">
           <div class="w-9 rounded-full bg-neutral text-neutral-content flex items-center justify-center font-bold">
-            <span>JD</span>
+            <span>{{ initials() }}</span>
           </div>
         </label>
         <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+          <li class="menu-title">{{ auth.user()?.name }}</li>
           <li><a (click)="showProfile()">Profile</a></li>
-          <li><a>Settings</a></li>
-          <li><a>Logout</a></li>
+          <li><a (click)="logout()">Abmelden</a></li>
         </ul>
       </div>
     </div>
@@ -759,3 +762,4 @@
   }
 
 </div>
+}

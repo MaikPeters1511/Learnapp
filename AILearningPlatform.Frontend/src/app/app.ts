@@ -1,22 +1,37 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, effect, inject, signal, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DecimalPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MarkdownComponent } from 'ngx-markdown';
 import { environment } from '../environments/environment';
+import { AuthPage } from './auth/auth-page';
+import { AuthService } from './auth/auth.service';
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, DecimalPipe, DatePipe, NgClass, MarkdownComponent],
+  imports: [FormsModule, DecimalPipe, DatePipe, NgClass, MarkdownComponent, AuthPage],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
 export class App implements OnInit {
   private http = inject(HttpClient);
+  readonly auth = inject(AuthService);
   
   // State
   currentView = signal<'assessment' | 'dashboard' | 'challenge' | 'quiz' | 'profile'>('assessment');
-  userId = '11111111-1111-1111-1111-111111111111';
+  // Die ID des angemeldeten Benutzers (kommt aus der Anmeldung, nicht mehr fest im Code).
+  get userId(): string {
+    return this.auth.user()?.id ?? '';
+  }
+
+  // Kürzel für den Avatar in der Navigationsleiste, z. B. "JD" für "John Doe".
+  initials = computed(() => {
+    const parts = (this.auth.user()?.name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    const first = parts[0][0] ?? '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase();
+  });
   
   // User Profile Data
   userProfile = signal<any>(null);
@@ -76,8 +91,61 @@ export class App implements OnInit {
   // General
   loading = signal<boolean>(false);
 
+  constructor() {
+    // Wird die Anmeldung beendet (Abmelden, Token abgelaufen), bleiben keine Daten des Benutzers im Speicher.
+    effect(() => {
+      if (!this.auth.isLoggedIn()) {
+        this.resetState();
+      }
+    });
+  }
+
   ngOnInit() {
+    if (this.auth.isLoggedIn()) {
+      this.auth.verify();
+      this.checkExistingPath();
+    }
+  }
+
+  /** Nach erfolgreicher Anmeldung oder Registrierung: Daten des Benutzers laden. */
+  onAuthenticated() {
+    this.resetState();
     this.checkExistingPath();
+  }
+
+  logout() {
+    this.auth.logout();
+  }
+
+  private resetState() {
+    this.currentView.set('assessment');
+    this.userProfile.set(null);
+    this.learningPath.set(null);
+    this.projectSuggestions.set([]);
+    this.dotnetLevel.set(1);
+    this.angularLevel.set(1);
+    this.architectureLevel.set(1);
+    this.testingLevel.set(1);
+    this.cloudLevel.set(1);
+    this.assessmentStep.set(1);
+    this.xp.set(0);
+    this.xpToast.set('');
+    this.quizzesTaken.set(0);
+    this.selectedChallenge.set(null);
+    this.quizQuestions.set([]);
+    this.quizTopic.set('');
+    this.currentQuestionIndex.set(0);
+    this.selectedQuizOption.set(null);
+    this.quizScore.set(0);
+    this.quizSubmitted.set(false);
+    this.challengeCode.set('');
+    this.submissionStatus.set('');
+    this.submissionFeedback.set('');
+    this.isSubmitting.set(false);
+    this.loading.set(false);
+    this.editingProfile.set(false);
+    this.profileSaving.set(false);
+    this.profileError.set('');
   }
 
   showProfile() {
@@ -121,6 +189,7 @@ export class App implements OnInit {
     }).subscribe({
       next: (res) => {
         this.userProfile.update(p => ({ ...p, name: res.name, email: res.email }));
+        this.auth.updateUser({ name: res.name, email: res.email });
         this.editingProfile.set(false);
         this.profileSaving.set(false);
       },

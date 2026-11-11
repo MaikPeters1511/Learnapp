@@ -66,8 +66,24 @@ Das Projekt nutzt die Standard-Konfigurationsmechanismen von .NET und Angular.
 - **Frontend**: Verwendet `PORT` (wird vom AppHost gesetzt) und kommuniziert mit dem `apiservice`.
 - **API/Worker**: Verwenden Verbindungszeichenfolgen (Connection Strings), die über Aspire (`sqldata`) bereitgestellt werden.
 - **OTEL_EXPORTER_OTLP_ENDPOINT**: Wird für Telemetriedaten (OpenTelemetry) verwendet.
+- **Auth:JwtKey** (`Auth__JwtKey`): Geheimer Schlüssel zum Signieren der Anmelde-Tokens, mindestens 32 zufällige Zeichen. Siehe Abschnitt „Anmeldung“.
+- **Auth:AttemptsPerMinute**: Erlaubte Login-/Registrierungsversuche pro IP und Minute (Standard 10).
 
 *TODO: Weitere spezifische Umgebungsvariablen (z.B. API Keys für KI-Modelle) hier ergänzen.*
+
+## Anmeldung
+
+Benutzer registrieren sich mit Name, E-Mail und Passwort. Passwörter werden mit PBKDF2 (ASP.NET `PasswordHasher`) gesalzen gehasht gespeichert. Die Anmeldung läuft über ein JWT (HS256, 12 Stunden gültig) im `Authorization`-Header. Alle Endpunkte unter `/api` außer `/api/auth/login` und `/api/auth/register` verlangen eine Anmeldung, und jeder Benutzer sieht und ändert nur seine eigenen Daten. Login und Registrierung sind pro IP-Adresse begrenzt.
+
+**Signierschlüssel einrichten** (einmalig, bleibt über Neustarts gleich):
+
+```bash
+dotnet user-secrets set "Auth:JwtKey" "$(openssl rand -base64 48)" --project AILearningPlatform.AppHost
+```
+
+Ohne Schlüssel nutzt der ApiServer in Development einen zufälligen pro Start, dann enden alle Anmeldungen beim Neustart. Außerhalb von Development startet der ApiServer ohne Schlüssel nicht. Im `docker-compose.yml` muss `AUTH_JWT_KEY` gesetzt sein (z. B. in einer `.env`-Datei).
+
+Hinter einem Reverse-Proxy (etwa dem nginx des Frontend-Containers) sieht die API nur die Adresse des Proxys, das Rate-Limit gilt dann für alle zusammen. Dafür müssten die `X-Forwarded-For`-Header ausgewertet werden.
 
 ## Tests
 

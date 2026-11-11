@@ -11,6 +11,11 @@ public class User
     public int CurrentStreak { get; set; }
     public DateTime LastActivityDate { get; set; }
     public int QuizzesCompleted { get; set; }
+
+    // Gehashtes Passwort (PBKDF2 via ASP.NET PasswordHasher). Null bei Konten ohne Anmeldung.
+    // [JsonIgnore], damit der Hash nie in einer API-Antwort landet, auch wenn ein Endpunkt den User zurückgibt.
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string? PasswordHash { get; set; }
     
     public ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
 

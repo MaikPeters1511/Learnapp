@@ -1,0 +1,66 @@
+/* Nur der animierte Hintergrund braucht eigenes CSS, alles andere kommt aus daisyUI/Tailwind. */
+:host {
+  display: block;
+}
+
+.blob {
+  animation: drift 20s ease-in-out infinite alternate;
+}
+
+.blob-2 {
+  animation-duration: 26s;
+  animation-delay: -8s;
+}
+
+.blob-3 {
+  animation-duration: 32s;
+  animation-delay: -15s;
+}
+
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.rise {
+  animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.appear {
+  animation: appear 0.35s ease both;
+}
+
+@keyframes drift {
+  to {
+    transform: translate3d(4rem, 3rem, 0) scale(1.12);
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-10px) rotate(-0.6deg);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Wer weniger Bewegung wünscht, bekommt keine Animationen. */
+@media (prefers-reduced-motion: reduce) {
+  .blob,
+  .float,
+  .rise,
+  .appear {
+    animation: none;
+  }
+}
