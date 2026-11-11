@@ -58,7 +58,7 @@ using (var scope = app.Services.CreateScope())
         try
         {
             db.Database.EnsureCreated();
-            SchemaUpgrades.Apply(db);
+            SchemaUpgrades.Apply(db, message => startupLogger.LogWarning("{Message}", message));
             break;
         }
         catch (Exception ex) when (attempt < maxAttempts)
@@ -108,7 +108,8 @@ app.MapGet("/api/users/{id}", async (Guid id, AppDbContext db) =>
         {
             Id = id,
             Name = "Demo User",
-            Email = "demo@example.com"
+            // Pro Benutzer eindeutig, weil die E-Mail in der Datenbank eindeutig sein muss.
+            Email = $"demo-{id:N}@example.com"
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -139,7 +140,15 @@ app.MapPut("/api/users/{id}/profile", async (Guid id, UpdateProfileRequest reque
 
     user.Name = name;
     user.Email = email;
-    await db.SaveChangesAsync();
+    try
+    {
+        await db.SaveChangesAsync();
+    }
+    catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        // Zwei gleichzeitige Änderungen: der Datenbank-Index fängt, was die Vorabprüfung nicht sehen konnte.
+        return Results.Conflict(new { error = "Diese E-Mail-Adresse wird bereits verwendet." });
+    }
 
     return Results.Ok(new { user.Id, user.Name, user.Email });
 });
