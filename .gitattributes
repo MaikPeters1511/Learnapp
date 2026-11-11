@@ -1,0 +1,11 @@
+# Einheitliche Zeilenenden (LF) auf allen Systemen, damit keine CRLF-Änderungen entstehen.
+* text=auto eol=lf
+
+# Binärdateien nie umwandeln.
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
