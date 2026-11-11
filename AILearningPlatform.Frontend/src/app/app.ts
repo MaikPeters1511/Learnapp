@@ -1,28 +1,25 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { DecimalPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MarkdownComponent } from 'ngx-markdown';
-import { User } from './models/user';
-import { UserService } from './services/user.service';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, DecimalPipe, DatePipe, MarkdownComponent],
+  imports: [FormsModule, DecimalPipe, DatePipe, NgClass, MarkdownComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
 export class App implements OnInit {
   private http = inject(HttpClient);
-  private userService = inject(UserService);
   
   // State
   currentView = signal<'assessment' | 'dashboard' | 'challenge' | 'quiz' | 'profile'>('assessment');
   userId = '11111111-1111-1111-1111-111111111111';
   
   // User Profile Data
-  userProfile = signal<User | null>(null);
+  userProfile = signal<any>(null);
 
   // Assessment Form State
   dotnetLevel = signal<number>(1);
@@ -84,12 +81,14 @@ export class App implements OnInit {
   }
 
   showProfile() {
-    if (!this.userProfile()) {
-      this.userService.getUserProfile().subscribe(user => {
-        this.userProfile.set(user);
-      });
-    }
     this.currentView.set('profile');
+    // Immer frisch laden, damit XP, Streak und Abzeichen aktuell sind.
+    this.http.get<any>(`${environment.apiUrl}/api/users/${this.userId}/profile`).subscribe({
+      next: (profile) => {
+        this.userProfile.set(profile);
+        this.xp.set(profile.points ?? 0);
+      }
+    });
   }
 
   checkExistingPath() {
