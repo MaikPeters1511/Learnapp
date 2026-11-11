@@ -390,8 +390,10 @@ app.MapGet("/api/projects/suggestions/{userId}", async (Guid userId, AppDbContex
             model = lmStudioModel,
             messages = new[]
             {
-                new { role = "system", content = "You are a coding career advisor. Generate 3 project ideas matching the user's level. Write the title, description and difficulty text in German (Deutsch). Output ONLY a valid raw JSON array of objects without markdown blocks. Format: [{\"title\":\"...\",\"description\":\"...\",\"difficulty\":\"...\"}]" },
-                new { role = "user", content = $"Suggest 3 projects for level {avgLevel} out of 10." }
+                new { role = "system", content = "You are a coding career advisor. Generate 3 portfolio project ideas that are challenging but achievable for the user's skill levels (each on a scale of 1-10): choose projects at most 1-2 levels above the user's average, and never far beyond it. Keep descriptions to 2-3 sentences. Write the title, description and difficulty text in German (Deutsch). The difficulty must be one of 'Einfach', 'Mittel', 'Schwer' followed by the numeric level in brackets, e.g. 'Mittel (5/10)'. Output ONLY a valid raw JSON array of objects without markdown blocks. Format: [{\"title\":\"...\",\"description\":\"...\",\"difficulty\":\"...\"}]" },
+                new { role = "user", content = profile != null
+                    ? $"Skill levels (1-10): .NET {profile.DotNetLevel}, Angular {profile.AngularLevel}, Architecture {profile.ArchitectureLevel}, Testing {profile.TestingLevel}, Cloud {profile.CloudLevel}. Average: {avgLevel}/10. Suggest 3 projects."
+                    : $"Suggest 3 projects for level {avgLevel} out of 10." }
             },
             temperature = 0.5
         });

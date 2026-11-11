@@ -74,6 +74,7 @@ export class App implements OnInit {
     this.http.get(`${environment.apiUrl}/api/learningpath/${this.userId}`).subscribe({
       next: (path: any) => {
         this.learningPath.set(path);
+        this.loadSkillProfile();
         this.loadProjectSuggestions();
         this.currentView.set('dashboard');
         this.loading.set(false);
@@ -103,6 +104,21 @@ export class App implements OnInit {
       error: (err) => {
         console.error('Assessment failed', err);
         this.loading.set(false);
+      }
+    });
+  }
+
+  // Gespeicherte Einstufung laden, damit das Dashboard nicht bei 1/10 stehen bleibt.
+  loadSkillProfile() {
+    this.http.get<any>(`${environment.apiUrl}/api/users/${this.userId}`).subscribe({
+      next: (user) => {
+        const p = user?.skillProfile;
+        if (!p) return;
+        this.dotnetLevel.set(p.dotNetLevel ?? 1);
+        this.angularLevel.set(p.angularLevel ?? 1);
+        this.architectureLevel.set(p.architectureLevel ?? 1);
+        this.testingLevel.set(p.testingLevel ?? 1);
+        this.cloudLevel.set(p.cloudLevel ?? 1);
       }
     });
   }
